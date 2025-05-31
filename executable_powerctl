@@ -15,7 +15,7 @@ save_tmux_sessions() {
 clean_exit() {
 	save_tmux_sessions
 	
-	# TODO: clear rm_secure trash
+	./"$HOME/.local/bin/rm_secure trash empty"
 }
 
 main() {
