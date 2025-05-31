@@ -135,5 +135,5 @@ zstyle ':completion:*' menu yes select
 ### ─────────────────────────────────────────────────────────────
 [[ -f "$XDG_STATE_HOME/ctools/utils.zsh" ]] && source "$XDG_STATE_HOME/ctools/utils.zsh"
 
-[[ -f "$XDG_STATE_HOME/ctools/utils.zsh" ]] && source "$XDG_STATE_HOME/ctools/utils.zsh"
+[[ -f "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh" ]] && source "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh"
 
