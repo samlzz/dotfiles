@@ -1,0 +1,52 @@
+#compdef rm_secure
+
+_rm_secure() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  if [[ ${words[2]} == trash ]]; then
+    local -a subcmds=(
+      'ls:List trash contents'
+      'restore:Restore a trashed file'
+      'rm:Delete a file from trash'
+      'empty:Empty the trash'
+      'filter:Remove files older than given minutes'
+    )
+    local TRASH_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/srm_trash"
+    case ${words[3]} in
+      restore|rm)
+	   local expl
+	   local -a files compadd_opts
+	   compadd_opts=(-J rmsecure)
+           files=(${(f)$(command find "$TRASH_DIR" -maxdepth 1 -printf '%f\n' 2>/dev/null | \
+		   sed -E 's/-_-.*$//' | sort -u)})
+	   _wanted srmtrash expl 'available files' _multi_parts -f $compadd_opts - / files
+	   #compadd -V 'foo test' -- $files
+          ;;
+        filter)
+          _guard '[0-9]#' 'minutes'
+          ;;
+        ls|empty)
+          ;;
+	*)
+	  _describe 'trash subcommands' subcmds
+	  ;;
+      esac
+    return
+  else
+    _arguments \
+      '-f[ignore nonexistent files and arguments, never prompt]' \
+      '-i[prompt before every removal]' \
+      '-I[prompt once before removing more than three files or recursively]' \
+      '-r[remove directories and their contents recursively]' \
+      '-R[same as -r]' \
+      '-d[remove empty directories]' \
+      '-v[explain what is being done]' \
+      '-h[display help]' \
+      '--help[display help]' \
+      '*:filename:_files'
+    fi
+}
+
+_rm_secure "$@"
+

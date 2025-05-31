@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# === File: ftinit ===
+
+set -euo pipefail
+
+TEMPLATE_DIR="$HOME/ctemplate"
+MAKEFILE_NAME_VAR_PATTERN='^NAME[[:space:]]*\?='
+
+init_template_dir() {
+	if [[ ! -d "$TEMPLATE_DIR" ]]; then
+		printf "'ctemplate' folder not found in \$HOME, retrieve from GitHub? (Y/n): "
+		read -r response
+		response=${response:-y}
+		if [[ "$response" =~ ^[yY]$ ]]; then
+			if ! git clone git@github.com:samlzz/template.git "$TEMPLATE_DIR"; then
+				printf "Error: Failed to clone repository.\n" >&2
+				return 1
+			fi
+		else
+			printf "Aborted by user.\n" >&2
+			return 1
+		fi
+	fi
+}
+
+sanitize_dirname() {
+	local path="$1"
+	local dir
+	dir=$(basename "$path")
+	dir=${dir//[^a-zA-Z0-9_-]/_}
+	printf "%s" "$dir"
+}
+
+copy_makefile_with_name() {
+	local target_dir="$1"
+	local makefile_src="$TEMPLATE_DIR/Makefile"
+	local makefile_dst="$target_dir/Makefile"
+	local src_name
+	src_name=$(sanitize_dirname "$target_dir")
+
+	if ! cp "$makefile_src" "$makefile_dst"; then
+		printf "Error: Failed to copy Makefile\n" >&2
+		return 1
+	fi
+
+	if ! sed -i.bak -E "s|$MAKEFILE_NAME_VAR_PATTERN.*|NAME      ?= $src_name|" "$makefile_dst"; then
+		printf "Error: Failed to modify Makefile NAME\n" >&2
+		return 1
+	fi
+
+	rm -f "$makefile_dst.bak"
+}
+
+copy_gitignore() {
+	local target_dir="$1"
+	if ! cp "$TEMPLATE_DIR/.gitignore" "$target_dir/.gitignore"; then
+		printf "Error: Failed to copy .gitignore\n" >&2
+		return 1
+	fi
+}
+
+copy_clang_format() {
+	local target_dir="$1"
+	if ! cp "$TEMPLATE_DIR/.clang-format" "$target_dir/.clang-format"; then
+		printf "Error: Failed to copy .clang-format\n" >&2
+		return 1
+	fi
+}
+
+init_git_repo() {
+	local target_dir="$1"
+	if ! git -C "$target_dir" init; then
+		printf "Error: Failed to initialize git repository\n" >&2
+		return 1
+	fi
+}
+
+create_src_dir() {
+	local target_dir="$1"
+	mkdir -p "$target_dir/src"
+}
+
+main() {
+	local curr_dir
+	curr_dir=$(pwd)
+	local opt_repo=0
+	local opt_format=0
+
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		-r | --repo)
+			opt_repo=1
+			shift
+			;;
+		-f | --format)
+			opt_format=1
+			shift
+			;;
+		*)
+			printf "Usage: ftinit [-r|--repo] [-f|--format]\n" >&2
+			return 1
+			;;
+		esac
+	done
+
+	if ! init_template_dir; then
+		return 1
+	fi
+	if ! copy_makefile_with_name "$curr_dir"; then
+		return 1
+	fi
+
+	create_src_dir "$curr_dir"
+
+	if [[ "$opt_repo" -eq 1 ]]; then
+		if ! copy_gitignore "$curr_dir"; then
+			return 1
+		fi
+		if ! init_git_repo "$curr_dir"; then
+			return 1
+		fi
+	fi
+
+	if [[ "$opt_format" -eq 1 ]]; then
+		if ! copy_clang_format "$curr_dir"; then
+			return 1
+		fi
+	fi
+}
+
+main "$@"

@@ -1,0 +1,139 @@
+### ─────────────────────────────────────────────────────────────
+### Instant Prompt (Powerlevel10k) — MUST STAY AT THE TOP
+### ─────────────────────────────────────────────────────────────
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+### ─────────────────────────────────────────────────────────────
+### XDG Environment Variables
+### ─────────────────────────────────────────────────────────────
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+
+mkdir -p "$XDG_STATE_HOME/zsh" "$XDG_CACHE_HOME/zsh"
+
+### ─────────────────────────────────────────────────────────────
+### Oh-My-Zsh + Plugins
+### ─────────────────────────────────────────────────────────────
+export ZSH="$XDG_STATE_HOME/oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+plugins=(
+  fast-syntax-highlighting
+  you-should-use
+  zsh-autosuggestions
+)
+
+export ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$HOST-$ZSH_VERSION"
+source "$ZSH/oh-my-zsh.sh"
+
+### ─────────────────────────────────────────────────────────────
+### Oh-My-Zsh / Completion Settings
+### ─────────────────────────────────────────────────────────────
+CASE_SENSITIVE="true"
+ALWAYS_TO_END="true"
+COMPLETION_WAITING_DOTS="true"
+zstyle ':omz:update' mode auto
+zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/zcompcache"
+
+### ─────────────────────────────────────────────────────────────
+### Zsh History
+### ─────────────────────────────────────────────────────────────
+HISTFILE="$XDG_STATE_HOME/zsh/history"
+HISTSIZE=100000
+SAVEHIST=100000
+
+setopt SHARE_HISTORY
+setopt INC_APPEND_HISTORY
+setopt INC_APPEND_HISTORY_TIME
+setopt HIST_IGNORE_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt HIST_VERIFY
+
+### ─────────────────────────────────────────────────────────────
+### Powerlevel10k Configuration
+### ─────────────────────────────────────────────────────────────
+[[ -f $ZSH/.p10k.zsh ]] && source $ZSH/.p10k.zsh
+
+### ─────────────────────────────────────────────────────────────
+### PATH and Tools
+### ─────────────────────────────────────────────────────────────
+#?# 'path' is a special zsh variable, a table of string synched 
+#?# on '$PATH'
+typeset -U path PATH
+
+path+=(
+  "$HOME/.local/bin"
+  "$HOME/.local/share/pnpm"
+)
+
+export PATH
+
+export LESS='--mouse --wheel-lines=3'
+
+# FZF Theme
+export FZF_DEFAULT_OPTS=" \
+--color=bg+:#363a4f,bg:#24273a,spinner:#f4dbd6,hl:#ed8796 \
+--color=fg:#cad3f5,header:#ed8796,info:#c6a0f6,pointer:#f4dbd6 \
+--color=marker:#b7bdf8,fg+:#cad3f5,prompt:#c6a0f6,hl+:#ed8796 \
+--multi"
+
+### ─────────────────────────────────────────────────────────────
+### CLI Tools Initialization
+### ─────────────────────────────────────────────────────────────
+
+# Zoxide (cd alternative)
+if command -v zoxide &> /dev/null; then
+  eval "$(zoxide init zsh --cmd cd)"
+fi
+
+# Use bat as manpager with stripped ANSI
+if command -v bat &> /dev/null; then
+  export MANPAGER="sh -c 'sed -u -e \"s/\\x1B\[[0-9;]*m//g; s/.\\x08//g\" | bat -p -lman'"
+fi
+
+# Default Editor
+if command -v nvim &> /dev/null; then
+  export EDITOR=nvim
+elif command -v vim &> /dev/null; then
+  export EDITOR=vim
+else
+  export EDITOR=vi
+fi
+
+# Use trashcli to rm files 10 minutes later
+if command -v trash-put &> /dev/null; then
+  del() {
+    trash-put "$@" && \
+	    systemd-run --user --on-active=10min trash-empty 0.007 &> /dev/null
+  }
+
+  restore() {
+    mv "$HOME"/.local/share/Trash/files/"$1" .
+  }
+fi
+
+### ─────────────────────────────────────────────────────────────
+### Completion
+### ─────────────────────────────────────────────────────────────
+fpath+=("$XDG_STATE_HOME/zsh/completion")
+autoload -Uz compinit && compinit -d "$ZSH_COMPDUMP"
+
+# For rm_secure
+autoload -Uz complist
+zmodload zsh/complist
+
+zstyle ':completion:*' menu yes select
+# zstyle ':completion:*:rm_secure:*:srmtrash' menu yes select
+# zstyle ':completion:::::default' menu yes select
+# zstyle ':completion:*:rm_secure-:*:srmtrash' menu select=long
+# zstyle ':completion:*:rm_secure-trash-rm:*:srmtrash'      menu yes select
+
+### ─────────────────────────────────────────────────────────────
+### Load Custom Features
+### ─────────────────────────────────────────────────────────────
+[[ -f "$XDG_STATE_HOME/ctools/utils.zsh" ]] && source "$XDG_STATE_HOME/ctools/utils.zsh"
+
+[[ -f "$XDG_STATE_HOME/ctools/utils.zsh" ]] && source "$XDG_STATE_HOME/ctools/utils.zsh"
+

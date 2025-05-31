@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+bg=$(cat "$HOME/.cache/current_wallpaper")
+if [[ ! -f "$bg" ]]; then
+	if [[ -f "$DEFAULT_WALLPAPER" ]]; then
+		bg="$DEFAULT_WALLPAPER"
+	else
+		bg="$HOME/Pictures/wallpapers/evening-sky.png"
+	fi
+fi
+
+lockbg="/tmp/lockscreen_bg.png"
+
+magick "$bg" -blur 8x6 -resize 1920x1080^ -gravity center -extent 1920x1080 \
+-fill "#ffffff" -gravity North -pointsize 82 -annotate +10+100 "$(date '+%H:%M')" \
+"$lockbg"
+
+swaylock -f -i "$lockbg" --indicator-idle-visible --indicator-radius 120 \
+--ring-color 89dceb --inside-color 1e1e2e
+

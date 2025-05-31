@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+
+create_guard_name() {
+	local basename="$1"
+	local ext="$2"
+	local guard
+	guard=$(printf "%s_%s" "$basename" "$ext" | tr '[:lower:]' '[:upper:]')
+	printf "%s\n" "$guard"
+}
+
+create_header_file() {
+	local filepath="$1"
+	local ext="$2"
+	local guard="$3"
+
+	if ! printf "%s\n" "$guard" | grep -Eq '^[A-Z0-9_]+$'; then
+		printf "Invalid include guard: %s\n" "$guard" >&2
+		return 1
+	fi
+
+	printf "#ifndef %s\n# define %s\n\n#endif\n" "$guard" "$guard" >"${filepath}.${ext}"
+}
+
+create_source_file() {
+	local filepath="$1"
+	local header_ext="$2"
+	local source_ext="$3"
+
+	printf "#include \"%s.%s\"\n" "$(basename "$filepath")" "$header_ext" >"${filepath}.${source_ext}"
+}
+
+create_cpp_class() {
+	local fullpath="$1"
+
+	local dir
+	dir=$(dirname "$fullpath")
+	local class
+	class=$(basename "$fullpath")
+	local hpp="${fullpath}.hpp"
+	local cpp="${fullpath}.cpp"
+	local guard
+	guard=$(create_guard_name "$class" "hpp")
+
+	if [[ -e "$hpp" || -e "$cpp" ]]; then
+		printf "Error: %s or %s already exists.\n" "$hpp" "$cpp" >&2
+		return 1
+	fi
+
+	mkdir -p "$dir"
+
+	cat >"$hpp" <<EOF
+#ifndef ${guard}
+# define ${guard}
+
+# include <iostream>
+
+class ${class} {
+public:
+    ${class}();
+    ${class}(const ${class}& other);
+    ${class}& operator=(const ${class}& other);
+    ~${class}();
+
+private:
+    // Attributes
+};
+
+#endif
+EOF
+
+	cat >"$cpp" <<EOF
+#include "${class}.hpp"
+
+//* Constructors
+${class}::${class}() {
+    std::cout << "${class} default constructor called" << std::endl;
+}
+
+${class}::${class}(const ${class}& other) {
+    std::cout << "${class} copy constructor called" << std::endl;
+    *this = other;
+}
+
+// operators
+${class}& ${class}::operator=(const ${class}& other) {
+    std::cout << "${class} assignment operator called" << std::endl;
+    if (this != &other) {
+        // Copy attributes here
+    }
+    return *this;
+}
+
+//* Methods
+
+// ...
+
+
+//* Destructor
+
+${class}::~${class}() {
+    std::cout << "${class} destructor called" << std::endl;
+}
+EOF
+
+	printf "Created %s and %s with Orthodox Canonical Form.\n" "$hpp" "$cpp"
+}
+
+create_c_header() {
+	local fullpath="$1"
+
+	local dir base
+	dir=$(dirname "$fullpath")
+	base=$(basename "$fullpath")
+	local hfile="${fullpath}.h"
+	local cfile="${fullpath}.c"
+	local guard
+	guard=$(create_guard_name "$base" "h")
+
+	if [[ -e "$hfile" ]]; then
+		printf "Error: %s already exists.\n" "$hfile" >&2
+		return 1
+	fi
+
+	mkdir -p "$dir"
+
+	if ! create_header_file "$fullpath" "h" "$guard"; then
+		printf "Error: Failed to create header file.\n" >&2
+		return 1
+	fi
+
+	printf "Do you want to create the source file %s? (Y/n): " "$cfile"
+	read -r create_source
+	create_source=${create_source:-y}
+
+	if [[ "$create_source" =~ ^[yY]$ ]]; then
+		if ! create_source_file "$fullpath" "h" "c"; then
+			printf "Error: Failed to create source file.\n" >&2
+			return 1
+		fi
+		printf "Created %s and %s\n" "$hfile" "$cfile"
+	else
+		printf "Created %s\n" "$hfile"
+	fi
+}
+
+main() {
+	local mode="cpp"
+	local path
+
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--c)
+			mode="c"
+			shift
+			;;
+		*)
+			path="$1"
+			shift
+			;;
+		esac
+	done
+
+	if [[ -z "$path" ]]; then
+		printf "Usage: hcreate [--c] <path/to/ClassOrFile>\n" >&2
+		return 1
+	fi
+
+	if [[ "$mode" == "cpp" ]]; then
+		create_cpp_class "$path"
+	else
+		create_c_header "$path"
+	fi
+}
+
+main "$@"

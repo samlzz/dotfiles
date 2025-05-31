@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# === File: gupdate ===
+
+set -euo pipefail
+
+main() {
+	local curr_dir
+	curr_dir=$(pwd)
+	local default_repo="$HOME/ctemplate"
+	local updated_repos=()
+	local repos=()
+
+	if [[ $# -eq 0 ]]; then
+		printf "No directory provided, using default repository.\n"
+	else
+		repos+=("$@")
+	fi
+	repos+=("$default_repo")
+
+	for repo in "${repos[@]}"; do
+		if [[ "$repo" != /* ]]; then
+			repo="${curr_dir}/${repo}"
+		fi
+
+		if [[ ! -d "$repo" ]]; then
+			printf "Error: Directory '%s' does not exist.\n" "$repo" >&2
+			continue
+		fi
+		cd "$repo" || {
+			printf "Error: Failed to access %s\n" "$repo" >&2
+			continue
+		}
+		if [[ ! -d .git ]]; then
+			printf "Error: %s is not a Git repository.\n" "$repo" >&2
+			continue
+		fi
+
+		printf "Updating repository: %s\n" "$repo"
+		git fetch --all --quiet
+		local pull_output
+		pull_output=$(git pull 2>&1)
+
+		if [[ $? -eq 0 && "$pull_output" != *"Already up to date."* ]]; then
+			updated_repos+=("$repo")
+		fi
+	done
+
+	cd "$curr_dir" || true
+
+	printf "\n[SUMMARY] Updated repositories:\n"
+	if [[ ${#updated_repos[@]} -eq 0 ]]; then
+		printf "No updates were applied.\n"
+	else
+		for repo in "${updated_repos[@]}"; do
+			printf "- %s\n" "$repo"
+		done
+	fi
+}
+
+main "$@"

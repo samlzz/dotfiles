@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+if [ -z "$1" ]; then
+	echo "Usage: $0 [suspend|hibernate|poweroff|reboot]"
+	exit 1
+fi
+
+
+save_tmux_sessions() {
+	if tmux has-session &>/dev/null; then
+		./"$HOME/.config/tmux/plugins/tmux-resurrect/scripts/save.sh"
+	fi
+}
+
+clean_exit() {
+	save_tmux_sessions
+	
+	# TODO: clear rm_secure trash
+}
+
+main() {
+	case "$1" in
+	suspend)
+		systemctl suspend-then-hibernate
+		;;
+	hibernate)
+		systemctl hibernate
+		;;
+	poweroff)
+		clean_exit
+		systemctl poweroff
+		;;
+	reboot)
+		clean_exit
+		systemctl reboot
+		;;
+	*)
+		echo "Invalid option: $1"
+		echo "Usage: $0 [suspend|hibernate|poweroff|reboot]"
+		exit 1
+		;;
+	esac
+}
+
+main $@

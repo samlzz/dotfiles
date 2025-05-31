@@ -1,0 +1,65 @@
+{
+  "extensions.autoUpdate": true,
+  // ts / tsx
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+  "tailwindCSS.emmetCompletions": true,
+  // c / cpp
+  "[c, cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  },
+  "makefile.configureOnOpen": true,
+  "C_Cpp.formatting": "disabled",
+  "C_Cpp.vcFormat.indent.preserveComments": true,
+  "C_Cpp.codeAnalysis.clangTidy.codeAction.formatFixes": false,
+  "C_Cpp.autocompleteAddParentheses": true,
+  "C_Cpp.default.cppStandard": "c++98",
+  // py
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.defaultColorDecorators": "always"
+  },
+  "basedpyright.analysis.diagnosticSeverityOverrides": {
+    "reportAny": false,
+    "reportExplicitAny": false,
+    "reportImplicitRelativeImport": "information",
+    "reportUnreachable": "none",
+    "reportUnusedCallResult": "none"
+  },
+  // editor
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "editor.renderWhitespace": "boundary",
+  "editor.detectIndentation": false,
+  "editor.indentSize": "tabSize",
+  "editor.formatOnSave": true,
+  "workbench.settings.applyToAllProfiles": [
+    "editor.formatOnSave",
+    "editor.formatOnPaste"
+  ],
+  "security.workspace.trust.untrustedFiles": "open",
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "basedpyright.analysis.typeCheckingMode": "off",
+  "terminal.integrated.inheritEnv": false,
+  "editor.insertSpaces": false,
+  "editor.useTabStops": false,
+  "[ignore]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "workbench.editor.empty.hint": "hidden",
+  "workbench.colorTheme": "Fresh Material",
+  "[properties]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  }
+}

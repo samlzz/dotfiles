@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+IFS=$'\n\t'
+
+TRASH_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/srm_trash"
+
+create_trash_dir() {
+    mkdir -p "$TRASH_DIR"
+}
+
+timestamp() {
+    date +"%Y%m%d%H%M%S"
+}
+
+sanitize_filename() {
+    local input="$1"
+    printf "%s" "${input//[^a-zA-Z0-9._-]/_}"
+}
+
+select_from_matches() {
+    local matches=("$@")
+    local selected;
+
+    trap 'printf "\nrm_secure: ❌ Selection aborted\n" >&2; exit 130' INT
+    if command -v fzf >/dev/null 2>&1; then
+        selected=$(printf "%s\n" "${matches[@]}" | fzf --prompt="Select a file: ")
+    else
+        printf "Multiple matching files found:\n" >&2
+        select selected in "${matches[@]}"; do
+            [[ -n "$selected" ]] && break
+        done
+    fi
+
+    if [[ -z "$selected" ]]; then
+        printf "rm_secure: ❌No selection made\n" >&2
+        return 1
+    fi
+
+    printf "%s" "$selected"
+}
+
+restore_or_delete_file() {
+    local action="$1"
+    local base="$2"
+    local selected; local candidates;
+
+    mapfile -t candidates < <(find "$TRASH_DIR" -maxdepth 1 -name "${base}-_-*" -printf "%f\n")
+
+    if [[ ${#candidates[@]} -eq 0 ]]; then
+        printf "rm_secure: ❌No matching file '%s'\n" "$base" >&2
+        return 1
+    fi
+
+    if [[ ${#candidates[@]} -eq 1 ]]; then
+        selected="${candidates[0]}"
+    elif ! selected=$(select_from_matches "${candidates[@]}"); then
+        return 1
+    fi
+
+    case "$action" in
+        restore)
+            mv "$TRASH_DIR/$selected" "./$base"
+            printf "rm_secure: Restored: %s ← %s\n" "$base" "$selected"
+            ;;
+        rm)
+            rm -rf "$TRASH_DIR/$selected"
+            printf "rm_secure: Deleted from trash: %s\n" "$selected"
+            ;;
+        *)
+            printf "rm_secure: ❌Unknown action '%s'\n" "$action" >&2
+            return 1
+            ;;
+    esac
+}
+
+list_trash() {
+    local entries
+    if ! entries=$(find "$TRASH_DIR" -printf "%P\n"); then
+        printf "rm_secure: ❌Failed to read trash directory\n" >&2
+        return 1
+    fi
+
+    if [[ -z "$entries" ]]; then
+        printf "rm_secure: 🗑️ Trash is empty\n"
+        return 0
+    fi
+
+    printf "rm_secure: 📂 Trash contents:\n\n"
+    printf "%s\n" "$entries" | sort
+}
+
+empty_trash() {
+    rm -rf "$TRASH_DIR"/*
+    printf "rm_secure: 🧹 Trash emptied\n"
+}
+
+filter_trash_by_age() {
+    local minutes="$1"
+    if [[ ! "$minutes" =~ ^[0-9]+$ ]]; then
+        printf "rm_secure: ❌Invalid duration: %s\n" "$minutes" >&2
+        return 1
+    fi
+    find "$TRASH_DIR" -type f -mmin +"$minutes" -delete -print
+    printf "rm_secure: 🧹 Deleted files (older than %s min)\n" "$minutes"
+}
+
+handle_trash_command() {
+    local subcmd="$1"
+    shift
+
+    case "$subcmd" in
+        restore)
+            [[ $# -lt 1 ]] && printf "rm_secure: ❌Base name required\n" >&2 && return 1
+            restore_or_delete_file "restore" "$1"
+            ;;
+        rm)
+            [[ $# -lt 1 ]] && printf "rm_secure: ❌Base name required\n" >&2 && return 1
+            restore_or_delete_file "rm" "$1"
+            ;;
+        empty)
+            empty_trash
+            ;;
+        filter)
+            [[ $# -lt 1 ]] && printf "rm_secure: ❌Missing duration in minutes\n" >&2 && return 1
+            filter_trash_by_age "$1"
+            ;;
+        ls)
+            list_trash
+            ;;
+        *)
+            printf "rm_secure: ⚠️ Unknown trash subcommand: %s\n" "$subcmd" >&2
+            return 1
+            ;;
+    esac
+}
+
+backup_file() {
+    local file="$1"
+    local name; local stamp; local backup_name
+
+    if [[ ! -e "$file" ]]; then
+        printf "rm_secure: ⚠️ File not found: %s\n" "$file" >&2
+        return 0
+    fi
+
+    name=$(sanitize_filename "$(basename "$file")")
+    stamp="$(timestamp)"
+    backup_name="${name}-_-${stamp}"
+
+    if [[ -d "$file" ]]; then
+        cp -a "$file" "$TRASH_DIR/$backup_name"
+    else
+        cp "$file" "$TRASH_DIR/$backup_name"
+    fi
+}
+
+main() {
+    create_trash_dir
+
+    if [[ $# -gt 0 && "$1" == "trash" ]]; then
+        shift
+        [[ $# -lt 1 ]] && printf "rm_secure: ❌Subcommand required\n" >&2 && return 1
+        if ! handle_trash_command "$@"; then return 1; fi
+        return 0
+    fi
+
+    local -a rm_options=()
+    local -a files=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --)
+                shift
+                files+=("$@")
+                break
+                ;;
+            -*)
+                rm_options+=("$1")
+                ;;
+            *)
+                files+=("$1")
+                ;;
+        esac
+        shift
+    done
+
+    if [[ ${#files[@]} -eq 0 ]]; then
+        printf "rm_secure: ❌No files specified\n" >&2
+        return 1
+    fi
+
+    for file in "${files[@]}"; do
+        backup_file "$file"
+    done
+
+    command rm "${rm_options[@]}" -- "${files[@]}"
+}
+
+main "$@"
+

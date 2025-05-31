@@ -1,0 +1,12 @@
+bare
+core20
+core22
+core24
+discord
+gnome-3-38-2004
+gnome-42-2204
+gnome-46-2404
+gtk-common-themes
+icloud-for-linux
+mesa-2404
+snapd
