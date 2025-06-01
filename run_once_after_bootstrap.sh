@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 TPM_DIR="$HOME/.config/tmux/plugins/tpm"
-OMZ_DIR="$HOME/.local/share/oh-my-zsh"
 
 # 🔐 Scripts permissions
 chmod +x ~/.local/bin/* 2>/dev/null
@@ -14,14 +13,6 @@ if [[ ! -d "$TPM_DIR" ]]; then
 fi
 
 "$TPM_DIR"/bin/install_plugins
-
-# 🧠 Install oh-my-zsh (XDG-compliant path)
-if [[ ! -d "$OMZ_DIR" ]]; then
-  echo "Installing oh-my-zsh in $OMZ_DIR..."
-  git clone https://github.com/ohmyzsh/ohmyzsh.git "$OMZ_DIR"
-else
-  echo "oh-my-zsh already installed at $OMZ_DIR"
-fi
 
 echo "Initial setup complete. Please ensure all dependencies are installed."
 
