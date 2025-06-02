@@ -21,7 +21,7 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 
 plugins=(
   you-should-use
-  zsh-syntax-higlighting
+  zsh-syntax-highlighting
   fast-syntax-highlighting
   zsh-autosuggestions
 )
