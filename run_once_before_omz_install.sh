@@ -26,9 +26,9 @@ install_oh_my_zsh() {
 }
 
 install_plugin() {
-	local name=$1
-	local url=$2
-	local dest="$PLUGINS_DIR/$name"
+	local name="$1"
+	local url="$2"
+	local dest="$3"
 
 	if [[ ! "$name" =~ ^[a-zA-Z0-9._-]+$ ]]; then
 		printf "Error: invalid plugin name: %s\n" "$name" >&2
@@ -56,8 +56,9 @@ install_all_plugins() {
 
 	local plugin
 	for plugin in "${!ZSH_PLUGINS[@]}"; do
-		install_plugin "$plugin" "${ZSH_PLUGINS[$plugin]}"
+		install_plugin "$plugin" "${ZSH_PLUGINS[$plugin]}" "$PLUGINS_DIR/$plugin"
 	done
+	install_plugin "powerlevel10k" "https://github.com/romkatv/powerlevel10k.git" "$OMZ_DIR/custom/themes/powerlevel10k"
 }
 
 main() {
