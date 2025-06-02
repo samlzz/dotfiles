@@ -40,38 +40,43 @@ select_from_matches() {
     printf "%s" "$selected"
 }
 
-restore_or_delete_file() {
+restore_or_delete_files() {
     local action="$1"
-    local base="$2"
-    local selected; local candidates;
+    shift
+    local base
 
-    mapfile -t candidates < <(find "$TRASH_DIR" -maxdepth 1 -name "${base}-_-*" -printf "%f\n")
+    for base in "$@"; do
+        local selected
+	local candidates
 
-    if [[ ${#candidates[@]} -eq 0 ]]; then
-        printf "rm_secure: ❌No matching file '%s'\n" "$base" >&2
-        return 1
-    fi
+        mapfile -t candidates < <(find "$TRASH_DIR" -maxdepth 1 -name "${base}-_-*" -printf "%f\n")
 
-    if [[ ${#candidates[@]} -eq 1 ]]; then
-        selected="${candidates[0]}"
-    elif ! selected=$(select_from_matches "${candidates[@]}"); then
-        return 1
-    fi
+        if [[ ${#candidates[@]} -eq 0 ]]; then
+           printf "rm_secure: ❌No matching file '%s'\n" "$base" >&2
+	   continue
+        fi
 
-    case "$action" in
-        restore)
-            mv "$TRASH_DIR/$selected" "./$base"
-            printf "rm_secure: Restored: %s ← %s\n" "$base" "$selected"
-            ;;
-        rm)
-            rm -rf "$TRASH_DIR/$selected"
-            printf "rm_secure: Deleted from trash: %s\n" "$selected"
-            ;;
-        *)
-            printf "rm_secure: ❌Unknown action '%s'\n" "$action" >&2
-            return 1
-            ;;
-    esac
+        if [[ ${#candidates[@]} -eq 1 ]]; then
+            selected="${candidates[0]}"
+        elif ! selected=$(select_from_matches "${candidates[@]}"); then
+            continue
+        fi
+
+        case "$action" in
+            restore)
+               mv "$TRASH_DIR/$selected" "./$base"
+               printf "rm_secure: Restored: %s ← %s\n" "$base" "$selected"
+               ;;
+            rm)
+               rm -rf "$TRASH_DIR/$selected"
+               printf "rm_secure: Deleted from trash: %s\n" "$selected"
+               ;;
+            *)
+               printf "rm_secure: ❌Unknown action '%s'\n" "$action" >&2
+               return 1
+               ;;
+        esac
+    done
 }
 
 list_trash() {
@@ -112,11 +117,11 @@ handle_trash_command() {
     case "$subcmd" in
         restore)
             [[ $# -lt 1 ]] && printf "rm_secure: ❌Base name required\n" >&2 && return 1
-            restore_or_delete_file "restore" "$1"
+            restore_or_delete_files "restore" "$@"
             ;;
         rm)
             [[ $# -lt 1 ]] && printf "rm_secure: ❌Base name required\n" >&2 && return 1
-            restore_or_delete_file "rm" "$1"
+            restore_or_delete_files "rm" "$@"
             ;;
         empty)
             empty_trash
