@@ -115,7 +115,7 @@ install_usr_executables() {
 main() {
 	install_tmux_plugins || return 1
 	install_usr_executables || return 1
-	printf "✅ Initial setup complete. Make sure all required dependencies are installed.\n"
+	printf "Initial setup complete. Make sure all required dependencies are installed.\n"
 }
 
 main "$@"
