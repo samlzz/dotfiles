@@ -20,8 +20,9 @@ export ZSH="$XDG_STATE_HOME/oh-my-zsh"
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
 plugins=(
-  fast-syntax-highlighting
   you-should-use
+  zsh-syntax-higlighting
+  fast-syntax-highlighting
   zsh-autosuggestions
 )
 
