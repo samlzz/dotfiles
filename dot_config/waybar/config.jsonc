@@ -1,57 +1,63 @@
 {
-  "layer": "top",
-  "modules-left": ["custom/launcher", "cpu", "memory", "temperature", "tray"],
-  "modules-center": ["hyprland/workspaces","hyprland/submap"],
-  "modules-right": [
-    "custom/updates",
-    "backlight",
-    "pulseaudio",
-    "keyboard-state",
-    "custom/clipboard",
-    "clock",
-    "power-profiles-daemon",
-    "battery",
-    "custom/power"
+  "layer": "bottom",
+  "position": "top",
+  "modules-left": ["group/monitoring", "tray"],
+  "modules-center": [
+    "hyprland/window",
+    "hyprland/workspaces",
+    "hyprland/submap"
   ],
-  "pulseaudio": {
-    "tooltip": false,
-    "scroll-step": 5,
-    "format": "{icon}  {volume}%",
-    "format-muted": "{icon} ✗",
-    "on-click": "wpctl set-mute @DEFAULT_SINK@ toggle",
-    "format-icons": {
-      "default": ["", "", ""]
-    }
-  },
-  "hyprland/workspaces": {
-    "format": "{icon}",
-    "on-click": "activate",
-    "format-icons": {
-      "default": "",
-      "active": "",
-      "urgent": ""
+  "modules-right": [
+    "custom/clipboard",
+    "group/connectivity",
+    "group/system",
+    "group/group-power"
+  ],
+  "group/monitoring": {
+    "orientation": "horizontal",
+    "drawer": {
+      "transition-duration": 600,
+      "transition-to-right": true,
+      "click-to-reveal": true
     },
-    "persistent-workspaces": {
-      "*": [1, 2, 3, 4, 5, 6]
-    },
-    "sort-by": "number"
+    "modules": [
+      "custom/distrib_ico",
+      "custom/updates",
+      "cpu",
+      "memory",
+      "temperature",
+      "power-profiles-daemon"
+    ]
   },
-  "hyprland/submap": {
-    "format": " ✎",
-    "tooltip": true
+  "custom/distrib_ico": {
+    "format": ""
+  },
+  "custom/updates": {
+    "format": "  {}",
+    "exec": "checkupdates | wc -l",
+    "exec-if": "[[ $(checkupdates | wc -l) != 0 ]]",
+    "interval": 60,
+    "on-click": "alacritty -e paru -Syu && notify-send 'The system has been updated' "
+  },
+  "cpu": {
+    "interval": 15,
+    "format": "  {}%",
+    "max-length": 10
+  },
+  "memory": {
+    "interval": 30,
+    "format": "  {}%",
+    "max-length": 10
   },
   "temperature": {
     "critical-threshold": 80,
-    // "format-critical": "{temperatureC}°C {icon}",
+    "format-critical": "{temperatureC}°C ",
     "format": "{temperatureC}°C {icon}",
-    "format-icons": [""]
-  },
-  "backlight": {
-    "tooltip": false,
-    "format": " {}%",
-    "interval": 1,
-    "on-scroll-up": "brightnessctl -e4 -n2 5%+",
-    "on-scroll-down": "brightnessctl -e4 -n2 5%+"
+    "format-icons": {
+      "0": "",
+      "50": "",
+      "70": ""
+    }
   },
   "power-profiles-daemon": {
     "format": "{icon}",
@@ -64,82 +70,157 @@
       "power-saver": ""
     }
   },
-  "battery": {
-    "states": {
-      "good": 95,
-      "warning": 30,
-      "critical": 20
-    },
-    "format": "{icon}  {capacity}%",
-    "format-charging": " {capacity}%",
-    "format-plugged": " {capacity}%",
-    "format-alt": "{time} {icon}",
-    "format-icons": ["", "", "", "", ""]
-  },
   "tray": {
     "icon-size": 20,
     "spacing": 20
   },
-  "custom/bluetooth": {
-    "format": "",
-    "exec": "bluetoothctl show | grep -q 'Powered: yes' && echo '' || echo ''",
-    "interval": 10,
-    "on-click": "blueman-manager"
+  "hyprland/window": {
+    "max-length": 40
   },
-  "keyboard-state": {
-    "capslock": true,
+  "hyprland/workspaces": {
     "format": "{icon}",
     "format-icons": {
-      "locked": "",
-      "unlocked": ""
-    }
+      "default": "󰐾",
+      "active": "󰝥",
+      "empty": "󰝦"
+    },
+    "all-outputs": false,
+    "persistent-workspaces": {
+      "*": 6
+    },
+    "sort-by": "number"
   },
-  "clock": {
-    "format": "{:%I:%M   %d/%m}",
-    "on-click": "gsimplecal"
-  },
-  "cpu": {
-    "interval": 15,
-    "format": "  {}%",
-    "max-length": 10
-  },
-  "memory": {
-    "interval": 30,
-    "format": "  {}%",
-    "max-length": 10
-  },
-  "custom/launcher": {
-    "format": " ",
-    "on-click": "fuzzel",
-    "on-click-right": "killall fuzzel"
-  },
-  "custom/power": {
-    "format": "⏻",
-    "tooltip": false,
-    "menu": "on-click",
-    "menu-file": "~/.config/waybar/power_menu.xml",
-    "menu-actions": {
-      "lock": "bash lock-session",
-      "logout": "hyprctl dispatch exit",
-      "suspend": "/usr/local/bin/powerctl suspend",
-      "reboot": "/usr/local/bin/powerctl reboot",
-      "poweroff": "/usr/local/bin/powerctl poweroff"
-    }
-  },
-  "custom/updates": {
-    "format": "󰅢  {}",
-    "exec": "checkupdates | wc -l",
-    "exec-if": "[[ $(checkupdates | wc -l) != 0 ]]",
-    "interval": 15,
-    "on-click": "alacritty -e paru -Syu && notify-send 'The system has been updated' "
+  "hyprland/submap": {
+    "format": " ✎",
+    "tooltip": true
   },
   "custom/clipboard": {
     "format": "",
     "tooltip": false,
     "interval": 1,
     "exec": "cliphist list | wc -l",
-    "on-click": "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy",
+    "on-click": "cliphist list | rofi -dmenu | cliphist decode | wl-copy",
     "on-click-right": "cliphist wipe",
     "on-click-middle": "rm -f ~/.cache/cliphist/db"
+  },
+  "group/connectivity": {
+    "orientation": "inherit",
+    "modules": ["group/network", "group/bluetooth"]
+  },
+  "group/network": {
+    "orientation": "inherit",
+    "drawer": {
+      "transition-duration": 300,
+      "transition-left-to-right": false
+    },
+    "modules": ["network", "network#details"]
+  },
+  "network": {
+    "format": "󰛳",
+    "format-wifi": "{icon}",
+    "format-disconnected": "󰲛",
+    "format-icons": {
+      "wifi": ["󰤟", "󰤢", "󰤥", "󰤨"]
+    },
+    "on-click": "rofi-wifi-menu"
+  },
+  "network#details": {
+    "format": "{ifname}",
+    "format-wifi": "{essid} ({signalStrength}%)",
+    "format-disconnected": "",
+    "on-click": "rofi-wifi-menu"
+  },
+  "group/bluetooth": {
+    "orientation": "inherit",
+    "drawer": {
+      "transition-duration": 300,
+      "transition-left-to-right": false
+    },
+    "modules": ["bluetooth", "bluetooth#devices"]
+  },
+  "bluetooth": {
+    "format": "󰂯",
+    "format-off": "󰂲",
+    "format-disabled": "󰂲",
+    "tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
+    "tooltip-format-connected": "{controller_alias}\t{controller_address}\n\n{num_connections} connected\n\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+    "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%",
+    "on-click": "rofi-bluetooth"
+  },
+  "bluetooth#devices": {
+    "format": "",
+    "format-connected": "{num_connections} devices",
+    "tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
+    "tooltip-format-connected": "{controller_alias}\t{controller_address}\n\n{num_connections} connected\n\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+    "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%",
+    "on-click": "rofi-bluetooth"
+  },
+  "group/system": {
+    "orientation": "inherit",
+    "modules": ["backlight", "pulseaudio", "battery", "clock"]
+  },
+  "backlight": {
+    "format": "{percent}% {icon}",
+    "format-icons": ["󰝦", "󰪞", "󰪟", "󰪠", "󰪡", "󰪢", "󰪣", "󰪤", "󰪥"],
+    "smooth-scrolling-threshold": 1.0,
+    "scroll-step": 2,
+    "on-scroll-up": "brightnessctl --quiet set +1%",
+    "on-scroll-down": "brightnessctl --quiet set 1%-",
+    "tooltip": false
+  },
+  "pulseaudio": {
+    "format": "{volume}% {icon}",
+    "format-muted": "{volume}% 󰝟",
+    "format-icons": ["󰕿", "󰖀", "󰕾"],
+    "smooth-scrolling-threshold": 1.0,
+    "tooltip": false
+  },
+  "battery": {
+    "interval": 10,
+    "states": {
+      "warn": 25,
+      "critical": 10
+    },
+    "format": "{capacity}% {icon}",
+    "format-critical": "{capacity}% {icon}󰈅",
+    "format-charging": "{capacity}% {icon}󱐋",
+    "format-charging-critical": "{capacity}% {icon}󱐋",
+    "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
+  },
+  "clock": {
+    "interval": 1,
+    "format": "{:%H:%M:%S}",
+    "format-alt": "{:%d/%m/%Y}",
+    "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+  },
+  "group/group-power": {
+    "drawer": {
+      "transition-duration": 500,
+      "transition-left-to-right": false
+    },
+    "orientation": "horizontal",
+    "modules": ["custom/power", "custom/quit", "custom/lock", "custom/reboot"]
+  },
+  "custom/quit": {
+    "format": "󰗼",
+    "on-click": "hyprctl dispatch exit",
+    "tooltip-format": "Log Out"
+  },
+  "custom/lock": {
+    "format": "󰍁",
+    "on-click": "loginctl lock-session",
+    "tooltip-format": "Lock"
+  },
+  "custom/reboot": {
+    "format": "󰜉",
+    "on-click": "/usr/local/bin/powerctl reboot",
+    "tooltip-format": "Reboot"
+  },
+  "custom/power": {
+    "format": "",
+    "on-click": "/usr/local/bin/powerctl poweroff",
+    "tooltip-format": "Power off"
   }
 }

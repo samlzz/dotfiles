@@ -1,264 +1,322 @@
-/* ### GLOBAL STYLES ### */
+@import url("./mocha.css");
+
+/*
+##################################################
+#######          STYLE GLOBAL WAYBAR         #####
+##################################################
+*/
 
 * {
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 13px;
   border: none;
-  border-radius: 10px;
-  font-family: "JetbrainsMono Nerd Font";
-  font-size: 15px;
-  min-height: 10px;
+  box-shadow: none;
+  transition: all 0.3s ease;
 }
 
-#window,
+#waybar {
+  background: transparent;
+  color: @text;
+}
+
+/*
+##################################################
+#######         LAYOUT / MODULE WRAPPING     #####
+##################################################
+*/
+
 #workspaces,
-#submap-indicator,
-#network,
-#pulseaudio,
-#temperature,
-#power-profiles-daemon,
-#battery,
-#backlight,
-#keyboard-state,
+#window,
+#submap,
+#tray,
+#system,
+#monitoring,
+#connectivity,
+#custom-updates,
 #clock,
+#custom-clipboard,
+#custom-power {
+  background-color: alpha(@surface0, 0.9);
+  border-radius: 1em;
+  padding: 0 1em;
+  margin: 6px 6px 0 6px;
+}
+
+#backlight,
+#pulseaudio,
+#battery {
+  margin-right: 10px;
+}
+
+#network {
+  margin-right: 8px;
+}
+#network#details,
+#bluetooth.devices {
+  margin-right: 6px;
+}
+
+#custom-distrib_ico,
 #cpu,
 #memory,
-#tray,
-#custom-power,
-#custom-wallpaper,
-#custom-updates,
-#custom-clipboard {
-  margin-top: 6px;
-  border-radius: 10px;
-  transition: none;
+#temperature {
+  margin-right: 10px;
 }
 
-#pulseaudio,
-#temperature,
-#power-profiles-daemon,
-#battery,
-#backlight,
-#keyboard-state,
-#clock,
-#memory,
-#cpu,
-#tray,
-#custom-launcher,
-#custom-power,
-#custom-wallpaper,
-#custom-updates,
-#custom-clipboard {
-  margin-left: 8px;
-  padding-left: 10px;
-  padding-right: 10px;
-  margin-bottom: 0px;
+/* Zones gauche / centre / droite */
+.modules-left > * {
+  margin-left: 6px;
+}
+.modules-center > * {
+  margin: 0 6px;
+}
+.modules-right > * {
+  margin-right: 6px;
 }
 
-#window {
-  padding-left: 10px;
-  padding-right: 10px;
-  color: transparent;
-  background: transparent;
-}
+/*
+##################################################
+#######            MODULE : ICON DISTRO      #####
+##################################################
+*/
 
-window#waybar {
-  background: transparent;
-}
-
-window#waybar.hidden {
-  opacity: 0.2;
-}
-
-/* ### Workspaces styles ### */
-
-#workspaces {
-  margin-left: 12px;
-  font-size: 4px;
-  margin-bottom: 0px;
-  background: #161320;
-  opacity: 0.8;
-}
-
-#workspaces button {
-  transition: none;
-  color: #b5e8e0;
-  background: transparent;
-  font-size: 16px;
-  border-radius: 2px;
-}
-#workspaces button:hover {
-  transition: none;
-  box-shadow: inherit;
-  text-shadow: inherit;
-  color: #fae3b0;
-  border-color: #e8a2af;
-  color: #e8a2af;
-}
-
-#workspaces button.active {
-  transition: none;
-  color: #f28fad;
-  background: transparent;
-  font-size: 4px;
-}
-
-#workspaces button.urgent {
-  color: #abe9b3;
-  border-top: 2px solid #abe9b3;
-  border-bottom: 2px solid #abe9b3;
-}
-#workspaces button.urgent:hover {
-  color: #e8a2af;
-}
-
-#submap {
+#custom-distrib_ico {
   font-size: 20px;
-  margin-left: 12px;
-  padding-left: 3px;
-  padding-right: 8px;
-  color: #f28fad;
-  background: #161320;
-  opacity: 0.6;
+  border-radius: 10em;
+  transition: none;
+  color: @sky;
+  margin-left: 2px;
 }
 
-/* ### MODULES STYLES ### */
+/* ##################################################
+#######        GROUP : MONITORING            #####
+################################################## */
 
-/* ? LEFT ? */
-
-/* <custom-launcher> module */
+#custom-updates {
+  margin-bottom: 5px;
+  margin-right: 0;
+}
 
 #cpu {
-  color: #161320;
-  background: #96cdfb;
+  color: @mauve;
+  margin-left: 12px;
 }
-
 #memory {
-  color: #161320;
-  background: #ddb6f2;
+  color: @flamingo;
 }
-
 #temperature {
-  background-color: #ee9c58;
+  color: @peach;
 }
 #temperature.critical {
-  background-color: #eb4d4b;
-}
-
-#tray {
-  color: #b5e8e0;
-  background: #4b3c7d;
-}
-
-/* ? RIGHT ? */
-
-/* <custom-updates> module */
-
-#backlight {
-  color: #161320;
-  background: #f8bd96;
-}
-
-#pulseaudio {
-  color: #1a1826;
-  background: #fae3b0;
-}
-
-#keyboard-state {
-  background: #727a87;
-  min-width: 2px;
-  color: #ffffff;
-  padding-left: 0px;
-  padding-right: 0px;
-}
-#keyboard-state > label {
-  padding-left: 10px;
-  padding-right: 15px;
-}
-#keyboard-state > label.locked {
-  background: #323438;
-}
-
-#clock {
-  color: #161320;
-  background: #abe9b3;
+  color: @red;
+  font-weight: bold;
 }
 
 #power-profiles-daemon {
-  padding-right: 15px;
-  color: #ffffff;
+  color: @text;
+  border-radius: 0.8em;
+  padding-left: 0.5em;
+  font-weight: bold;
+  margin: 0.5em 0;
 }
+
 #power-profiles-daemon.performance {
-  background-color: #ee9c58;
+  background-color: @peach;
+  color: @crust;
+  padding-right: 0.6em;
 }
+
 #power-profiles-daemon.balanced {
-  background-color: #548fb6;
+  background-color: @blue;
+  color: @crust;
+  padding-right: 1em;
 }
+
 #power-profiles-daemon.power-saver {
-  background-color: #78e2a4;
-  color: #161320;
+  background-color: @green;
+  color: @crust;
+  padding-right: 0.8em;
+}
+
+/* ##################################################
+#######            MODULE : TRAY             #####
+################################################## */
+
+#tray > * > * {
+  margin: 0 0.3em;
+}
+
+/*
+##################################################
+#######            MODULE : WINDOW           #####
+##################################################
+*/
+#window {
+  color: @text;
+}
+
+/*
+##################################################
+#######            MODULE : WORKSPACES       #####
+##################################################
+*/
+
+#workspaces {
+  padding: 0 0.6em;
+}
+#workspaces button {
+  color: alpha(@lavender, 0.6);
+  padding: 0 0.5em;
+  border-radius: 1em;
+}
+#workspaces button.active {
+  color: @mauve;
+  background-color: alpha(@surface2, 0.3);
+}
+#workspaces button:hover {
+  background-color: alpha(@surface2, 0.5);
+}
+
+/*
+##################################################
+#######            MODULE : SUBMAP           #####
+##################################################
+*/
+
+#submap {
+  color: @peach;
+}
+
+/* ##################################################
+#######            MODULE : CLIPBOARD        #####
+################################################## */
+
+#custom-clipboard {
+  padding-right: 16px;
+  color: @teal;
+}
+
+/* ##################################################
+#######        GROUP : CONNECTIVITY          #####
+################################################## */
+
+#network {
+  color: @sky;
+}
+#network.disconnected {
+  color: @overlay1;
+}
+#network#details {
+  color: @subtext0;
+}
+#bluetooth {
+  color: @blue;
+}
+#bluetooth.devices {
+  color: @subtext1;
+}
+
+/* ##################################################
+#######        GROUP : SYSTEM                #####
+################################################## */
+
+#backlight {
+  color: @yellow;
+}
+
+#pulseaudio {
+  color: @lavender;
+}
+#pulseaudio.muted {
+  color: alpha(@lavender, 0.4);
 }
 
 #battery {
-  color: #161320;
-  background: #b5e8e0;
+  color: @green;
+  margin-right: 2px;
 }
-#battery.charging,
-#battery.plugged {
-  color: #161320;
-  background-color: #b5e8e0;
+#battery.warning {
+  color: @peach;
 }
-#battery.critical:not(.charging) {
-  background-color: #bf616a;
-  color: #161320;
+#battery.critical {
+  color: @red;
+  animation-name: blink;
+  animation-duration: 0.5s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
 }
-
-/* <custom-power> module */
-
-/* ### CUSTOM MODULES STYLES ### */
-
-#custom-launcher {
-  font-size: 24px;
-  margin-top: 6px;
-  padding-right: 5px;
-  border-radius: 10px;
-  transition: none;
-  color: #89dceb;
-  background: #161320;
+@keyframes blink {
+  0% {
+    color: @red;
+  }
+  100% {
+    color: @surface2;
+  }
 }
 
-#custom-wallpaper {
-  color: #161320;
-  background: #c9cbff;
+/* ##################################################
+#######            MODULE : CLOCK            #####
+################################################## */
+
+#clock {
+  margin-bottom: 5px;
+  margin-right: 0px;
+  padding-top: 2px;
+  padding-bottom: 3px;
+  color: @text;
 }
 
-#custom-updates {
-  color: #161320;
-  background: #e8a2af;
-  padding-left: 8px;
-  padding-right: 5px;
-}
+/* ##################################################
+#######       GROUP POWER – Drawer Styling       #####
+################################################## */
 
-#custom-clipboard {
-  color: #ffffff;
-  background: #727a87;
-  padding-right: 13px;
+#custom-power,
+#custom-reboot,
+#custom-lock,
+#custom-quit {
+  margin-top: 8px;
+  margin-bottom: 3px;
+  padding: 0 1em;
+  border-radius: 0.6em;
+  font-size: 18px;
+  font-weight: bold;
+  color: @text;
+  transition: all 0.2s ease;
 }
 
 #custom-power {
-  font-size: 30px;
-  margin-right: 8px;
-  color: #161320;
-  background: #f28fad;
+  padding-left: 0.8em;
+  background-color: alpha(@red, 0.25);
+  color: @red;
+}
+#custom-power:hover {
+  background-color: @red;
+  color: @crust;
 }
 
-#menu {
-  border-radius: 8px;
-  background-color: #1e1e2e;
-  color: #cdd6f4;
-  padding: 5px;
+#custom-reboot {
+  background-color: alpha(@peach, 0.25);
+  color: @peach;
 }
-#menuitem {
-  padding: 5px 10px;
-  border-radius: 4px;
+#custom-reboot:hover {
+  background-color: @peach;
+  color: @crust;
 }
-#menuitem:hover {
-  background-color: #313244;
+
+#custom-lock {
+  background-color: alpha(@blue, 0.25);
+  color: @blue;
+}
+#custom-lock:hover {
+  background-color: @blue;
+  color: @crust;
+}
+
+#custom-quit {
+  background-color: alpha(@mauve, 0.25);
+  color: @mauve;
+}
+#custom-quit:hover {
+  background-color: @mauve;
+  color: @crust;
 }
