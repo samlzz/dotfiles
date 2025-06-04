@@ -5,6 +5,34 @@ IFS=$'\n\t'
 
 TPM_DIR="$HOME/.config/tmux/plugins/tpm"
 TARGET_DIR="/usr/local/bin"
+declare -A HYPR_PLUGINS=(
+	['split-monitor-workspaces']="https://github.com/Duckonaut/split-monitor-workspaces"
+	# ['autre-plugin']="https://github.com/user/autre-plugin"
+)
+
+install_hyprland_plugins() {
+	if ! command -v hyprpm &>/dev/null; then
+		printf "❌ hyprpm absent. Skipping Hyprland plugins.\n" >&2
+		return 0
+	fi
+
+	hyprpm update
+
+	for plugin in "${!HYPR_PLUGINS[@]}"; do
+		local url="${HYPR_PLUGINS[$plugin]}"
+
+		if ! hyprpm list | grep -q "$plugin"; then
+			printf "➕ Adding Hyprland plugin %s\n" "$plugin"
+			hyprpm add "$url"
+		else
+			printf "✅ Plugin %s already present\n" "$plugin"
+		fi
+
+		hyprpm enable "$plugin"
+	done
+
+	hyprpm reload
+}
 
 get_chezmoi_source_path() {
 	local path
@@ -115,6 +143,7 @@ install_usr_executables() {
 main() {
 	install_tmux_plugins || return 1
 	install_usr_executables || return 1
+	install_hyprland_plugins || return 1
 	printf "Initial setup complete. Make sure all required dependencies are installed.\n"
 }
 

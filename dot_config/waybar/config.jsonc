@@ -161,6 +161,17 @@
     "orientation": "inherit",
     "modules": ["backlight", "pulseaudio", "battery", "clock"]
   },
+  "custom/backlight": {
+    "format": "{icon} {percentage}%",
+    "tooltip": true,
+    "tooltip-format": "Screen : {percentage}%\nKeyboard : {kbd_backlight}%",
+    "interval": 5,
+    "exec": "~/.config/waybar/backlight-info.sh",
+    "return-type": "json",
+    "scroll-step": 2,
+    "on-scroll-up": "brightnessctl --quiet set +1%",
+    "on-scroll-down": "brightnessctl --quiet set 1%-"
+  },
   "backlight": {
     "format": "{percent}% {icon}",
     "format-icons": ["󰝦", "󰪞", "󰪟", "󰪠", "󰪡", "󰪢", "󰪣", "󰪤", "󰪥"],
