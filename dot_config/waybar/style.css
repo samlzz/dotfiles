@@ -220,7 +220,7 @@
 #######        GROUP : SYSTEM                #####
 ################################################## */
 
-#backlight {
+#group-backlight {
   color: @yellow;
 }
 

@@ -88,7 +88,10 @@
     "persistent-workspaces": {
       "*": 6
     },
-    "sort-by": "number"
+    "sort-by": "number",
+    "on-scroll-up": "hyprctl dispatch workspace -1",
+    "on-scroll-down": "hyprctl dispatch workspace +1",
+    "smooth-scrolling-threshold": 1.0
   },
   "hyprland/submap": {
     "format": " ✎",
@@ -159,18 +162,16 @@
   },
   "group/system": {
     "orientation": "inherit",
-    "modules": ["backlight", "pulseaudio", "battery", "clock"]
+    "modules": ["group/group-backlight", "pulseaudio", "battery", "clock"]
   },
-  "custom/backlight": {
-    "format": "{icon} {percentage}%",
-    "tooltip": true,
-    "tooltip-format": "Screen : {percentage}%\nKeyboard : {kbd_backlight}%",
-    "interval": 5,
-    "exec": "~/.config/waybar/backlight-info.sh",
-    "return-type": "json",
-    "scroll-step": 2,
-    "on-scroll-up": "brightnessctl --quiet set +1%",
-    "on-scroll-down": "brightnessctl --quiet set 1%-"
+  "group/group-backlight": {
+	"orientation": "horizontal",
+    "drawer": {
+      "transition-duration": 300,
+      "transition-left-to-right": false,
+      "click-to-reveal": true
+    },
+	"modules": ["backlight", "custom/kbd-backlight"]
   },
   "backlight": {
     "format": "{percent}% {icon}",
@@ -180,6 +181,16 @@
     "on-scroll-up": "brightnessctl --quiet set +1%",
     "on-scroll-down": "brightnessctl --quiet set 1%-",
     "tooltip": false
+  },
+  "custom/kbd-backlight": {
+    "format": "{percentage}%  ",
+    "tooltip": false,
+    "interval": 2,
+    "exec": "~/.config/waybar/kbd_backlight_info.sh",
+    "return-type": "json",
+    "scroll-step": 2,
+    "on-scroll-up": "brightnessctl -d chromeos::kbd_backlight set +1%",
+    "on-scroll-down": "brightnessctl -d chromeos::kbd_backlight set 1%-"
   },
   "pulseaudio": {
     "format": "{volume}% {icon}",
