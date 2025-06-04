@@ -7,6 +7,5 @@ README.md
 
 packages
 packages/* # ignore packages dependencies
-lock-session
 powerctl
 code_settings.json
