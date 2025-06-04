@@ -7,8 +7,8 @@ fi
 
 
 save_tmux_sessions() {
-	if tmux has-session &>/dev/null; then
-		./"$HOME/.config/tmux/plugins/tmux-resurrect/scripts/save.sh"
+	if  tmux has-session &>/dev/null; then
+		"$HOME/.config/tmux/plugins/tmux-resurrect/scripts/save.sh"
 	fi
 }
 
