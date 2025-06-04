@@ -3,5 +3,7 @@ code-features
 code-marketplace
 opera
 reiserfsprogs
+rofi-bluetooth-git
+rofi-wifi-menu-git
 snapd
 swaylock-effects

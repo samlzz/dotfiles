@@ -68,7 +68,6 @@ file-roller
 firefox
 firewalld
 fprintd
-fuzzel
 fwupd
 gdb
 gdm
@@ -109,7 +108,9 @@ haveged
 hdparm
 hplip
 hwdetect
+hypridle
 hyprland
+hyprlock
 hyprpaper
 inetutils
 intel-ucode
@@ -186,6 +187,10 @@ rebuild-detector
 reflector
 reflector-simple
 reiserfsprogs
+rofi-bluetooth-git
+rofi-calc
+rofi-wayland
+rofi-wifi-menu-git
 rsync
 rtkit
 s-nail
