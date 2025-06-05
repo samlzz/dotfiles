@@ -113,15 +113,12 @@ apply_executable_decision() {
 }
 
 install_usr_executables() {
-	local chezmoi_dir
-	if ! chezmoi_dir=$(get_chezmoi_source_path); then
-		return 1
-	fi
+	local cm_dir="$1"
 
 	shopt -s nullglob
 	local cur_dir
 	cur_dir=$(pwd)
-	cd "$chezmoi_dir" || return 1
+	cd "$cm_dir" || return 1
 
 	local src dest_name dest
 	for src in executable_*; do
@@ -151,11 +148,28 @@ creates_named_subdirs() {
     done
 }
 
+safe_copy() {
+	local src="$1"
+	local dest="$2"
+
+	local ddir
+	ddir="$(dirname "$dest")"
+	mkdir -p "$ddir"
+	cp -u "$src" "$dest"
+	printf "✅ File '%s' up to date in '%s'\n" "$(basename "$src")" "$dest"
+}
+
 main() {
+	local chezmoi_dir
+	if ! chezmoi_dir=$(get_chezmoi_source_path); then
+		return 1
+	fi
+
 	install_tmux_plugins || return 1
-	install_usr_executables || return 1
+	install_usr_executables "$chezmoi_dir" || return 1
 	install_hyprland_plugins || return 1
 	creates_named_subdirs "$HOME/.local/share/vim" "backup" "swap" "undo" || return 1
+	safe_copy "$chezmoi_dir/chezmoi_config" "$HOME/.config/chezmoi/chezmoi.toml"
 	printf "Initial setup complete. Make sure all required dependencies are installed.\n"
 }
 
