@@ -183,7 +183,7 @@
     "tooltip": false
   },
   "custom/kbd-backlight": {
-    "format": "{percentage}%  ",
+    "format": "{percentage}%   ",
     "tooltip": false,
     "interval": 2,
     "exec": "~/.config/waybar/kbd_backlight_info.sh",
