@@ -138,14 +138,14 @@ install_usr_executables() {
 }
 
 creates_named_subdirs() {
-    local root="$1"
-    shift
-    [[ -z "$root" || "$#" -eq 0 ]] && return 1
+	local root="$1"
+	shift
+	[[ -z "$root" || "$#" -eq 0 ]] && return 1
 
-    mkdir -p "$root"
-    for sub in "$@"; do
-        mkdir -p "$root/$sub"
-    done
+	mkdir -p "$root"
+	for sub in "$@"; do
+		mkdir -p "$root/$sub"
+	done
 }
 
 safe_copy() {
@@ -170,6 +170,7 @@ main() {
 	install_hyprland_plugins || return 1
 	creates_named_subdirs "$HOME/.local/share/vim" "backup" "swap" "undo" || return 1
 	safe_copy "$chezmoi_dir/chezmoi_config" "$HOME/.config/chezmoi/chezmoi.toml"
+	"$HOME/.config/systemd/script/activate_service.sh"
 	printf "Initial setup complete. Make sure all required dependencies are installed.\n"
 }
 

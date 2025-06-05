@@ -59,7 +59,8 @@
 #custom-distrib_ico,
 #cpu,
 #memory,
-#temperature {
+#temperature,
+#custom-idle-inhibitor {
   margin-right: 10px;
 }
 
@@ -110,6 +111,13 @@
 #temperature.critical {
   color: @red;
   font-weight: bold;
+}
+
+#custom-idle-inhibitor {
+  color: @rosewater;
+  font-size: 19px;
+  margin-top: 2px;
+  margin-right: 16px;
 }
 
 #power-profiles-daemon {

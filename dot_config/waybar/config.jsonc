@@ -26,11 +26,13 @@
       "cpu",
       "memory",
       "temperature",
+	  "custom/idle-inhibitor",
       "power-profiles-daemon"
     ]
   },
   "custom/distrib_ico": {
-    "format": ""
+    "format": "",
+	"tooltip": false
   },
   "custom/updates": {
     "format": "  {}",
@@ -58,6 +60,13 @@
       "50": "",
       "70": ""
     }
+  },
+  "custom/idle-inhibitor": {
+    "format": "{}",
+    "exec": "$HOME/.config/waybar/scripts/check-idle.sh",
+    "on-click": "$HOME/.config/waybar/scripts/toggle-idle.sh",
+    "tooltip": false,
+    "signal": 10
   },
   "power-profiles-daemon": {
     "format": "{icon}",
@@ -186,7 +195,7 @@
     "format": "{percentage}%   ",
     "tooltip": false,
     "interval": 2,
-    "exec": "~/.config/waybar/kbd_backlight_info.sh",
+    "exec": "~/.config/waybar/scripts/kbd_backlight_info.sh",
     "return-type": "json",
     "scroll-step": 2,
     "on-scroll-up": "brightnessctl -d chromeos::kbd_backlight set +1%",
