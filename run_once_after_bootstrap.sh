@@ -155,7 +155,7 @@ main() {
 	install_tmux_plugins || return 1
 	install_usr_executables || return 1
 	install_hyprland_plugins || return 1
-	creates_named_subdirs "$HOME/.share/vim" "backup" "swap" "undo" || return 1
+	creates_named_subdirs "$HOME/.local/share/vim" "backup" "swap" "undo" || return 1
 	printf "Initial setup complete. Make sure all required dependencies are installed.\n"
 }
 
