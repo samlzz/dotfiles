@@ -2,7 +2,7 @@
 	email = sliziard@icloud.com
 	name = um4ss
 [pull]
-	rebase = false
+	rebase = true
 [core]
     pager = delta
 
