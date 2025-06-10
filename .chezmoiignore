@@ -10,3 +10,4 @@ packages/* # ignore packages dependencies
 powerctl
 code_settings.json
 chezmoi_config
+README.md
