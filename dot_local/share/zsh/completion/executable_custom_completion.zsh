@@ -40,3 +40,25 @@ _managedns() {
 	_values 'DNS State' on off state
 }
 compdef _managedns managedns
+
+# Completion for wallpaperctl
+_wallpaperctl() {
+  local -a subcmds
+  subcmds=('set:Set a specific wallpaper' 'rd:Set a random wallpaper')
+
+  local wall_dir="${WALL_DIR:-$HOME/Pictures/wallpapers}"
+
+  _arguments -C \
+    "1:command:((set\:Set\ a\ wallpaper rd\:Set\ a\ random\ one))" \
+    "2::image file:_files -W $wall_dir" \
+    && return 0
+}
+compdef _wallpaperctl wallpaperctl
+
+# Completion for powerctl
+_powertctl() {
+	_arguments -C \
+	  "1:action:(suspend hibernate poweroff reboot)" \
+	  "*:: :->args"	
+}
+compdef _powerctl powerctl

@@ -15,12 +15,10 @@ _rm_secure() {
     local TRASH_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/srm_trash"
     case ${words[3]} in
       restore|rm)
-	   local expl
-	   local -a files compadd_opts
-	   compadd_opts=(-J rmsecure)
-           files=(${(f)$(command find "$TRASH_DIR" -maxdepth 1 -printf '%f\n' 2>/dev/null | \
+	   local -a files
+       files=(${(f)$(command find "$TRASH_DIR" -maxdepth 1 -printf '%f\n' 2>/dev/null | \
 		   sed -E 's/-_-.*$//' | sort -u)})
-	   _wanted srmtrash expl 'available files' _multi_parts -f $compadd_opts - / files
+	   _describe 'trashed files' files
 	   #compadd -V 'foo test' -- $files
           ;;
         filter)
