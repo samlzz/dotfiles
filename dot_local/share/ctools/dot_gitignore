@@ -1,0 +1,13 @@
+**/**.swp
+.vscode/*
+
+**/ign_*
+
+build/*
+*.d
+*.o
+*.map
+*.a
+*.out
+*.bak
+.clang*

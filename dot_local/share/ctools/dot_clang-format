@@ -1,0 +1,23 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Always
+BreakBeforeBraces: Allman
+AllowShortFunctionsOnASingleLine: None
+ColumnLimit: 80
+ReflowComments: false
+SortIncludes: true
+
+# Alignement vertical propre
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignTrailingComments: true
+
+# Espaces avant parenthèses
+SpaceBeforeParens: ControlStatements
+
+# Ajouts pour se rapprocher de ton style
+AccessModifierOffset: -4 # pour centrer public/private
+EmptyLineBeforeAccessModifier: Always # saute toujours une ligne avant public/private
+KeepEmptyLinesAtTheStartOfBlocks: true

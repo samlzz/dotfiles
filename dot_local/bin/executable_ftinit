@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-TEMPLATE_DIR="$HOME/ctemplate"
+TEMPLATE_DIR="$XDG_STATE_HOME/ctools"
 MAKEFILE_NAME_VAR_PATTERN='^NAME[[:space:]]*\?='
 
 init_template_dir() {
@@ -33,7 +33,7 @@ sanitize_dirname() {
 
 copy_makefile_with_name() {
 	local target_dir="$1"
-	local makefile_src="$TEMPLATE_DIR/Makefile"
+	local makefile_src="$TEMPLATE_DIR/Makefile.template"
 	local makefile_dst="$target_dir/Makefile"
 	local src_name
 	src_name=$(sanitize_dirname "$target_dir")
