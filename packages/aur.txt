@@ -1,9 +1,6 @@
-ani-cli
 code-features
 code-marketplace
+hyprshot-gui-git
 opera
-reiserfsprogs
 rofi-bluetooth-git
 rofi-wifi-menu-git
-snapd
-swaylock-effects

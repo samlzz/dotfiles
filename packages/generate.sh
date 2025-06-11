@@ -8,6 +8,6 @@ pacman -Qqe >"$PACKAGES_DIR/pacman.txt"
 
 paru -Qqm >"$PACKAGES_DIR/aur.txt"
 
-snap list | awk 'NR>1 {print $1}' >"$PACKAGES_DIR/snap.txt"
+flatpak list --app | awk '{ print $2 }' >"$PACKAGES_DIR/flatpak.txt"
 
 echo "[✔] Dependecies files updated."
