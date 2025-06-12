@@ -61,5 +61,6 @@
   "workbench.colorTheme": "Fresh Material",
   "[properties]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
-  }
+  },
+  "workbench.iconTheme": "catppuccin-mocha"
 }

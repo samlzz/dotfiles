@@ -2,6 +2,7 @@
 adpyke.codesnap
 ajshort.include-autocomplete
 bradlc.vscode-tailwindcss
+catppuccin.catppuccin-vsc-icons
 charliermarsh.ruff
 dbaeumer.vscode-eslint
 deerawan.vscode-faker
