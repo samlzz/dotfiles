@@ -56,7 +56,7 @@ _wallpaperctl() {
 compdef _wallpaperctl wallpaperctl
 
 # Completion for powerctl
-_powertctl() {
+_powerctl() {
 	_arguments -C \
 	  "1:action:(suspend hibernate poweroff reboot)" \
 	  "*:: :->args"	
