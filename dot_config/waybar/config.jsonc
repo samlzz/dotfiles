@@ -134,13 +134,13 @@
     "format-icons": {
       "wifi": ["󰤟", "󰤢", "󰤥", "󰤨"]
     },
-    "on-click": "rofi-wifi-menu"
+    "on-click": "~/.config/waybar/scripts/wifi-menu.sh"
   },
   "network#details": {
     "format": "{ifname}",
     "format-wifi": "{essid} ({signalStrength}%)",
     "format-disconnected": "",
-    "on-click": "rofi-wifi-menu"
+    "on-click": "~/.config/waybar/scripts/wifi-menu.sh"
   },
   "group/bluetooth": {
     "orientation": "inherit",
@@ -158,7 +158,7 @@
     "tooltip-format-connected": "{controller_alias}\t{controller_address}\n\n{num_connections} connected\n\n{device_enumerate}",
     "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
     "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%",
-    "on-click": "rofi-bluetooth"
+    "on-click": "~/.config/waybar/scripts/bluetooth-menu.sh"
   },
   "bluetooth#devices": {
     "format": "",
