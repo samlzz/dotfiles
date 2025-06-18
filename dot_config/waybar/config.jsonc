@@ -84,7 +84,14 @@
     "spacing": 20
   },
   "hyprland/window": {
-    "max-length": 40
+    "format": "{class}",
+    "icon": true,
+    "icon-size": 18,
+    "separate-outputs": true,
+	"rewrite": {
+      "zen": "Zen-Browser",
+	},
+	"tooltip": false
   },
   "hyprland/workspaces": {
     "format": "{icon}",
