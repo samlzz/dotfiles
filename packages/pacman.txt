@@ -14,6 +14,8 @@ bash-completion
 bat
 bc
 bear
+bitwarden
+bitwarden-cli
 blueman
 bluez
 bluez-utils
@@ -149,6 +151,7 @@ npm
 nss-mdns
 ntfs-3g
 ntp
+nvm
 openssh
 opera
 pacman-contrib
@@ -173,13 +176,12 @@ python-reportlab
 rebuild-detector
 reflector
 reflector-simple
-rofi-bluetooth-git
 rofi-calc
 rofi-wayland
-rofi-wifi-menu-git
 rsync
 rtkit
 s-nail
+seahorse
 sg3_utils
 smartmontools
 sof-firmware

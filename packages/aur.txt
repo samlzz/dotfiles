@@ -2,5 +2,3 @@ code-features
 code-marketplace
 hyprshot-gui-git
 opera
-rofi-bluetooth-git
-rofi-wifi-menu-git
