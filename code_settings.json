@@ -62,5 +62,8 @@
   "[properties]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
   },
-  "workbench.iconTheme": "catppuccin-mocha"
+  "workbench.iconTheme": "catppuccin-mocha",
+  "[cpp]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  }
 }

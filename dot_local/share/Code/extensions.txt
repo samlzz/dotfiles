@@ -35,5 +35,6 @@ tomoki1207.pdf
 visualstudioexptteam.intellicode-api-usage-examples
 visualstudioexptteam.vscodeintellicode
 vscodevim.vim
+xaver.clang-format
 yoavbls.pretty-ts-errors
 yzane.markdown-pdf
