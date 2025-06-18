@@ -58,3 +58,7 @@ wlf-paste() {
 	fi
 	wl-paste | cat >$1
 }
+
+cpbak() {
+	cp "$1" "$1.bak"
+}

@@ -7,6 +7,7 @@ alias gaa="git add ."
 alias gcm="git commit -m"
 alias gca="git commit --amend"
 alias gp="git push"
+alias gpf="git push --force-with-lease"
 alias gifiles="git ls-files --others --ignored --exclude-standard"
 
 convc() {
