@@ -9,7 +9,11 @@
 [interactive]
     diffFilter = delta --color-only
 
+[include]
+	path = ~/.catppuccin.gitconfig
+
 [delta]
+	features = catppuccin-mocha
     navigate = true  # use n and N to move between diff sections
     dark = true      # or light = true, or omit for auto-detection
 
