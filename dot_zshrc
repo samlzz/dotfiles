@@ -67,6 +67,7 @@ typeset -U path PATH
 path+=(
   "$HOME/.local/bin"
   "$HOME/.local/share/pnpm"
+  "$HOME/.local/funcheck/host"
 )
 
 export PATH
@@ -142,3 +143,4 @@ zstyle ':completion:*' menu yes select
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.config/nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 source /usr/share/nvm/init-nvm.sh
+
