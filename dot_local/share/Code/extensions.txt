@@ -2,12 +2,15 @@
 adpyke.codesnap
 ajshort.include-autocomplete
 bradlc.vscode-tailwindcss
+catppuccin.catppuccin-vsc
 catppuccin.catppuccin-vsc-icons
 charliermarsh.ruff
 dbaeumer.vscode-eslint
 deerawan.vscode-faker
 detachhead.basedpyright
 dokca.42-ft-count-line
+dooez.alt-catppuccin-vsc
+eamodio.gitlens
 edwinhuish.better-comments-next
 esbenp.prettier-vscode
 foxundermoon.shell-format
@@ -31,6 +34,7 @@ oderwat.indent-rainbow
 perkovec.emoji
 pulkitgangwar.nextjs-snippets
 rust-lang.rust-analyzer
+shoubhitjamadhiar.to-do-manager
 tomoki1207.pdf
 visualstudioexptteam.intellicode-api-usage-examples
 visualstudioexptteam.vscodeintellicode

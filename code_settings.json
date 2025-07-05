@@ -58,12 +58,18 @@
     "editor.defaultFormatter": "foxundermoon.shell-format"
   },
   "workbench.editor.empty.hint": "hidden",
-  "workbench.colorTheme": "Fresh Material",
+  "workbench.colorTheme": "Alt Catppuccin Mocha",
   "[properties]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
   },
-  "workbench.iconTheme": "catppuccin-mocha",
+  "workbench.iconTheme": "catppuccin-macchiato",
   "[cpp]": {
     "editor.defaultFormatter": "xaver.clang-format"
-  }
+  },
+  "extensions.ignoreRecommendations": true,
+  "search.followSymlinks": true,
+  "gitlens.graph.minimap.enabled": false,
+  "gitlens.views.commitDetails.files.layout": "tree",
+  "gitlens.ai.model": "gitkraken",
+  "gitlens.ai.gitkraken.model": "gemini:gemini-2.0-flash"
 }
