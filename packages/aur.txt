@@ -1,3 +1,0 @@
-code-features
-code-marketplace
-hyprshot-gui-git

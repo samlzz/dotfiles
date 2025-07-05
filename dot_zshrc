@@ -102,18 +102,6 @@ else
   export EDITOR=vi
 fi
 
-# Use trashcli to rm files 10 minutes later
-if command -v trash-put &> /dev/null; then
-  del() {
-    trash-put "$@" && \
-	    systemd-run --user --on-active=10min trash-empty 0.007 &> /dev/null
-  }
-
-  restore() {
-    mv "$HOME"/.local/share/Trash/files/"$1" .
-  }
-fi
-
 ### ─────────────────────────────────────────────────────────────
 ### Completion
 ### ─────────────────────────────────────────────────────────────
@@ -136,11 +124,3 @@ zstyle ':completion:*' menu yes select
 [[ -f "$XDG_STATE_HOME/ctools/utils.zsh" ]] && source "$XDG_STATE_HOME/ctools/utils.zsh"
 
 [[ -f "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh" ]] && source "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh"
-
-### ─────────────────────────────────────────────────────────────
-### nvm configuration
-### ─────────────────────────────────────────────────────────────
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.config/nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-source /usr/share/nvm/init-nvm.sh
-
