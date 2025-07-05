@@ -89,7 +89,7 @@
     "icon-size": 18,
     "separate-outputs": true,
 	"rewrite": {
-      "zen": "Zen-Browser",
+      "zen": "Zen-Browser"
 	},
 	"tooltip": false
   },
@@ -141,13 +141,13 @@
     "format-icons": {
       "wifi": ["󰤟", "󰤢", "󰤥", "󰤨"]
     },
-    "on-click": "~/.config/waybar/scripts/wifi-menu.sh"
+    "on-click": "alacritty --class=term-float -e impala"
   },
   "network#details": {
     "format": "{ifname}",
     "format-wifi": "{essid} ({signalStrength}%)",
     "format-disconnected": "",
-    "on-click": "~/.config/waybar/scripts/wifi-menu.sh"
+    "on-click": "alacritty --class=term-float -e impala"
   },
   "group/bluetooth": {
     "orientation": "inherit",
