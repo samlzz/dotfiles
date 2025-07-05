@@ -1,2 +1,4 @@
 app.zen_browser.zen
 com.discordapp.Discord
+dev.aunetx.deezer
+md.obsidian.Obsidian

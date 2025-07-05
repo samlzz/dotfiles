@@ -75,6 +75,7 @@ git
 git-delta
 glow
 gnome-browser-connector
+gnome-control-center
 gnome-disk-utility
 gnome-keyring
 gnome-nettool
@@ -105,6 +106,7 @@ hyprland
 hyprlock
 hyprpaper
 hyprshot-gui-git
+impala
 inetutils
 intel-ucode
 iptables-nft
@@ -153,7 +155,6 @@ ntfs-3g
 ntp
 nvm
 openssh
-opera
 pacman-contrib
 paru
 perl
@@ -185,7 +186,9 @@ seahorse
 sg3_utils
 smartmontools
 sof-firmware
+strace
 sudo
+swayosd
 sysfsutils
 systemd-sysvcompat
 texinfo
