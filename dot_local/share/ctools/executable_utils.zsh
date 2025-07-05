@@ -25,7 +25,7 @@ srcs_fill() {
 	fi
 
 	local file_list
-	file_list=$(find "$search_dir" -type f \( -name "*.c" -o -name "*.cpp" \) |
+	file_list=$(find "$search_dir" \( -type f -or -type l \) \( -name "*.c" -o -name "*.cpp" \) |
 		sed 's|.*/||' |
 		sort |
 		tr '\n' ' ')

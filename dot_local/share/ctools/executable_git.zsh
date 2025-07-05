@@ -1,14 +1,17 @@
 alias gs="git status"
+alias gf="git fetch --all"
 alias gl="git log"
 alias gd="git diff"
 alias gcl="git clone"
 alias ga="git add"
 alias gaa="git add ."
+alias gc="git commit"
 alias gcm="git commit -m"
 alias gca="git commit --amend"
 alias gp="git push"
 alias gpf="git push --force-with-lease"
 alias ggraph="git log --oneline --graph --all --decorate"
+alias gck="git checkout"
 alias gifiles="git ls-files --others --ignored --exclude-standard"
 
 convc() {

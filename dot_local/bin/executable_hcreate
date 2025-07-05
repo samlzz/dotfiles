@@ -4,7 +4,7 @@ create_guard_name() {
 	local basename="$1"
 	local ext="$2"
 	local guard
-	guard=$(printf "%s_%s" "$basename" "$ext" | tr '[:lower:]' '[:upper:]')
+	guard=$(printf "%s_%s" "$basename" "$ext" | tr '[:lower:]' '[:upper:]' | sed 's/[^A-Z0-9_]/_/g')
 	printf "%s\n" "$guard"
 }
 
@@ -31,6 +31,7 @@ create_source_file() {
 
 create_cpp_class() {
 	local fullpath="$1"
+	local attr_attr="$2"
 
 	local dir
 	dir=$(dirname "$fullpath")
@@ -53,16 +54,23 @@ create_cpp_class() {
 # define ${guard}
 
 # include <iostream>
+# include <stdint.h>
+
+# define PRINT_CALLER
 
 class ${class} {
+
+${attr_attr}:
+    // _attributes
+
 public:
     ${class}();
+    ${class}(/*some parameters*/);
     ${class}(const ${class}& other);
-    ${class}& operator=(const ${class}& other);
     ~${class}();
 
-private:
-    // Attributes
+    ${class}& operator=(const ${class}& other);
+
 };
 
 #endif
@@ -71,35 +79,50 @@ EOF
 	cat >"$cpp" <<EOF
 #include "${class}.hpp"
 
-//* Constructors
+// *Constructors
 ${class}::${class}() {
+#ifdef PRINT_CALLER
     std::cout << "${class} default constructor called" << std::endl;
+#endif
+}
+
+${class}::${class}(...) {
+#ifdef PRINT_CALLER
+    std::cout << "${class} parameters constructor called" << std::endl;
+#endif
+	// Use parameters
 }
 
 ${class}::${class}(const ${class}& other) {
+#ifdef PRINT_CALLER
     std::cout << "${class} copy constructor called" << std::endl;
+#endif
     *this = other;
 }
+// *Destructor
+${class}::~${class}() {
+#ifdef PRINT_CALLER
+    std::cout << "${class} destructor called" << std::endl;
+#endif
+}
 
-// operators
+// *Operators
+
 ${class}& ${class}::operator=(const ${class}& other) {
+#ifdef PRINT_CALLER
     std::cout << "${class} assignment operator called" << std::endl;
+#endif
     if (this != &other) {
         // Copy attributes here
     }
     return *this;
 }
 
+
+
 //* Methods
 
 // ...
-
-
-//* Destructor
-
-${class}::~${class}() {
-    std::cout << "${class} destructor called" << std::endl;
-}
 EOF
 
 	printf "Created %s and %s with Orthodox Canonical Form.\n" "$hpp" "$cpp"
@@ -108,8 +131,9 @@ EOF
 create_c_header() {
 	local fullpath="$1"
 
-	local dir base
+	local dir
 	dir=$(dirname "$fullpath")
+	local base
 	base=$(basename "$fullpath")
 	local hfile="${fullpath}.h"
 	local cfile="${fullpath}.c"
@@ -145,7 +169,8 @@ create_c_header() {
 
 main() {
 	local mode="cpp"
-	local path
+	local is_tmpl=false
+	local paths=()
 
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
@@ -153,22 +178,39 @@ main() {
 			mode="c"
 			shift
 			;;
+		-t | --template)
+			is_tmpl=true
+			shift
+			;;
 		*)
-			path="$1"
+			paths+=("$1")
 			shift
 			;;
 		esac
 	done
 
-	if [[ -z "$path" ]]; then
-		printf "Usage: hcreate [--c] <path/to/ClassOrFile>\n" >&2
+	if [[ ${#paths[@]} -eq 0 ]]; then
+		printf "Usage: hcreate [--c] <path/to/ClassOrFile> [...]\n" >&2
 		return 1
 	fi
 
+	local p
 	if [[ "$mode" == "cpp" ]]; then
-		create_cpp_class "$path"
+		local atr="private"
+		if [[ "$is_tmpl" == "true" ]]; then
+			atr="protected"
+		fi
+		for p in "${paths[@]}"; do
+			if ! create_cpp_class "$p" "$atr"; then
+				printf "Failed to create C++ class for: %s\n" "$p" >&2
+			fi
+		done
 	else
-		create_c_header "$path"
+		for p in "${paths[@]}"; do
+			if ! create_c_header "$p"; then
+				printf "Failed to create C header for: %s\n" "$p" >&2
+			fi
+		done
 	fi
 }
 
