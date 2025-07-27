@@ -25,8 +25,9 @@
 ##################################################
 */
 
-#workspaces,
 #window,
+#workspaces,
+#custom-notifications,
 #submap,
 #tray,
 #system,
@@ -60,7 +61,8 @@
 #cpu,
 #memory,
 #temperature,
-#custom-idle-inhibitor {
+#custom-idle-inhibitor,
+#power-profiles-daemon {
   margin-right: 10px;
 }
 
@@ -125,7 +127,7 @@
   border-radius: 0.8em;
   padding-left: 0.5em;
   font-weight: bold;
-  margin: 0.5em 0;
+  margin: 0.5em 10px;
 }
 
 #power-profiles-daemon.performance {
@@ -144,6 +146,16 @@
   background-color: @green;
   color: @crust;
   padding-right: 0.8em;
+}
+
+#custom-colorpicker {
+  color: @sky;
+  font-size: 18px;
+  padding: 0 6px;
+  transition: color 0.4s ease;
+}
+#custom-colorpicker:hover {
+  color: @lavender;
 }
 
 /* ##################################################
@@ -183,6 +195,24 @@
 }
 #workspaces button:hover {
   background-color: alpha(@surface2, 0.5);
+}
+
+/*
+##################################################
+#######        MODULE : NOTIFICATIONS        #####
+##################################################
+*/
+
+#custom-notifications {
+  font-size: 16px;
+  color: @yellow;
+  border-radius: 1em;
+  padding: 0 0.9em;
+  padding-right: 1.1em;
+  transition: color 0.3s ease;
+}
+#custom-notifications:hover {
+  color: @peach;
 }
 
 /*
