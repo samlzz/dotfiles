@@ -11,7 +11,7 @@ alias gca="git commit --amend"
 alias gp="git push"
 alias gpf="git push --force-with-lease"
 alias ggraph="git log --oneline --graph --all --decorate"
-alias ghist="git log --color=always --pretty=format:"%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
+alias ghist="git log --color=always --pretty=format:\"%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s\" \
 	--date-order --date=human | fzf --ansi --no-sort \
 	--preview 'git show --color=always {1}' --preview-window=right:70%"
 alias gck="git checkout"
