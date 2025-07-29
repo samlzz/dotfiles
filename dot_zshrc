@@ -119,6 +119,12 @@ zstyle ':completion:*' menu yes select
 # zstyle ':completion:*:rm_secure-trash-rm:*:srmtrash'      menu yes select
 
 ### ─────────────────────────────────────────────────────────────
+### Imitate wl cpliboard
+### ─────────────────────────────────────────────────────────────
+alias wl-copy="xsel --clipboard"
+alias wl-paste="xsel --clipboard"
+
+### ─────────────────────────────────────────────────────────────
 ### Load Custom Features
 ### ─────────────────────────────────────────────────────────────
 [[ -f "$XDG_STATE_HOME/ctools/utils.zsh" ]] && source "$XDG_STATE_HOME/ctools/utils.zsh"
