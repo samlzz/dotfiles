@@ -16,33 +16,6 @@ manproto() {
 	fi
 }
 
-srcs_fill() {
-	local search_dir="${1:-.}"
-
-	if [ ! -f "Makefile" ]; then
-		echo "Error: Makefile not found in current directory."
-		return 1
-	fi
-
-	local file_list
-	file_list=$(find "$search_dir" \( -type f -or -type l \) \( -name "*.c" -o -name "*.cpp" \) |
-		sed 's|.*/||' |
-		sort |
-		tr '\n' ' ')
-
-	if [ -z "$file_list" ]; then
-		echo "No files found in '$search_dir'"
-		return 0
-	fi
-
-	sed -i -E "/### UFILES_START ###/,/### END ###/c\\
-### UFILES_START ###\nFILES     ?= $file_list\n### END ###
-" "Makefile"
-
-	echo "'FILES' updated with :"
-	echo "$file_list"
-}
-
 wlf-copy() {
 	if ! command -v wl-copy >/dev/null; then
 		echo "Error: wl-copy command not found."

@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+
+update_sources() {
+    local src_dir mk_file files output;
+    src_dir="${SRC_DIR:-.}"
+    mk_file="${MK_FILE:-Makefile}"
+
+    export LC_ALL=C
+
+    traverse() {
+        local dir="$1"
+        local file_list dir_list sub;
+        file_list=$(find "$dir" -mindepth 1 -maxdepth 1 -type f -name '*.c' -not -name '_*' 2>/dev/null \
+            | git check-ignore -nv --stdin 2>/dev/null \
+            | awk '/^::\t/ { print $2 }' | sort | sed 's|^\./||')
+
+        dir_list=$(find "$dir" -mindepth 1 -maxdepth 1 -type d -not -name '_*' 2>/dev/null \
+            | git check-ignore -nv --stdin 2>/dev/null \
+            | awk '/^::\t/ { print $2 }' | sort)
+
+        printf '%s\n' "$file_list"
+
+        while IFS= read -r sub; do
+            [[ -z "$sub" ]] && continue
+            traverse "$sub"
+        done <<< "$dir_list"
+    }
+
+    if ! files=$(cd "$src_dir" && traverse '.' 2>/dev/null); then
+        printf 'Error: Failed to traverse source directory.\n' >&2
+        return 1
+    fi
+
+    if [[ -z "${files//[[:space:]]/}" ]]; then
+        printf 'Warning: No source files found.\n' >&2
+        return 1
+    fi
+
+    local formatted;
+    formatted=$(printf '%s\n' "$files" \
+        | sed -e 's/^/\t\t/' -e '$!s/$/ \\/' -e '1s/^\t\t/FILES =\t/')
+
+    if [[ -z "${formatted//[[:space:]]/}" ]]; then
+        printf 'Error: Failed to format source list.\n' >&2
+        return 1
+    fi
+
+	if ! output=$(awk -v start="### UFILES_START ###" -v end="### END ###" '
+	    BEGIN { inblock = 0 }
+	    $0 == start {
+	        print;
+	        while ((getline line <"-") > 0) print line;
+	        inblock = 1;
+	        next
+	    }
+	    $0 == end { print; inblock = 0; next }
+	    inblock == 0 { print }
+	' "$mk_file" <<< "$formatted"); then
+        printf 'Error: Failed to process Makefile.\n' >&2
+        return 1
+    fi
+
+    if [[ -z "${output//[[:space:]]/}" ]]; then
+        printf 'Error: Makefile update resulted in empty output.\n' >&2
+        return 1
+    fi
+
+    if ! printf '%s\n' "$output" > "${mk_file}.tmp"; then
+        printf 'Error: Failed to write temporary Makefile.\n' >&2
+        return 1
+    fi
+
+    if ! mv "${mk_file}.tmp" "$mk_file"; then
+        printf 'Error: Failed to overwrite original Makefile.\n' >&2
+        return 1
+    fi
+
+    rm -f "${mk_file}.tmp"
+
+    printf '\033[0;32m[✓]\033[0m\n'
+}
+
+main() {
+	local curr
+	
+	curr="$(pwd)"
+	SRC_DIR="$1"
+	MK_FILE="$curr/Makefile"
+	
+	if [[ -z "$SRC_DIR" ]]; then
+		SRC_DIR="$curr"
+	fi
+
+    if [[ ! -f "$MK_FILE" ]]; then
+        printf "Makefile doesn't found in current directory" >&2
+        return 1
+    fi
+
+    update_sources
+}
+
+main "$@"
+
