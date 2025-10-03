@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import argparse, sys, os
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Gdk', '4.0')
+from gi.repository import Gtk, Gdk, GLib, Gio
+
+# gtk-layer-shell (optionnel)
+try:
+    gi.require_version('GtkLayerShell', '0.1')
+    from gi.repository import GtkLayerShell
+    HAS_LAYER = True
+except Exception:
+    HAS_LAYER = False
+
+C = {
+    "rosewater":"#f5e0dc","flamingo":"#f2cdcd","pink":"#f5c2e7","mauve":"#cba6f7",
+    "red":"#f38ba8","maroon":"#eba0ac","peach":"#fab387","yellow":"#f9e2af",
+    "green":"#a6e3a1","teal":"#94e2d5","sky":"#89dceb","sapphire":"#74c7ec",
+    "blue":"#89b4fa","lavender":"#b4befe","text":"#cdd6f4","subtext1":"#bac2de",
+    "subtext0":"#a6adc8","overlay2":"#9399b2","overlay1":"#7f849c","overlay0":"#6c7086",
+    "surface2":"#585b70","surface1":"#45475a","surface0":"#313244","base":"#1e1e2e",
+    "mantle":"#181825","crust":"#11111b"
+}
+
+def build_css(bg_alpha=0.40, accent="mauve", card_bg="base"):
+    r = int(C[accent][1:3],16); g = int(C[accent][3:5],16); b = int(C[accent][5:7],16)
+    return f"""
+    window.overlay {{
+        background-color: rgba({r}, {g}, {b}, {bg_alpha});
+    }}
+    #card {{
+        background: {C[card_bg]};
+        color: {C['text']};
+        border-radius: 24px;
+        padding: 36px 42px;
+        box-shadow: 0 16px 64px 0 rgba(0,0,0,0.55);
+        border: 1px solid {C['surface1']};
+    }}
+    #title {{
+        font-weight: 800;
+        font-size: 40px;
+        letter-spacing: 0.3px;
+    }}
+    #msg {{
+        margin-top: 12px;
+        font-size: 20px;
+        color: {C['subtext1']};
+    }}
+    button.cta {{
+        background: {C['mauve']};
+        color: #0b0b0f;
+        border-radius: 14px;
+        padding: 10px 18px;
+        border: none;
+        font-weight: 700;
+    }}
+    button.ghost {{
+        background: {C['surface1']};
+        color: {C['text']};
+        border-radius: 14px;
+        padding: 10px 16px;
+        border: 1px solid {C['surface2']};
+        font-weight: 600;
+    }}
+    button.cta:hover {{ filter: brightness(1.05); }}
+    button.ghost:hover {{ filter: brightness(1.05); }}
+    """
+
+def shell_quote(s: str) -> str:
+    return "'" + s.replace("'", "'\\''") + "'"
+
+def click_to_close(win):
+    gc = Gtk.GestureClick()
+    gc.connect("released", lambda *_: win.close())
+    return gc
+
+def key_close(win):
+    kc = Gtk.EventControllerKey()
+    def on_key(_ctrl, keyval, _keycode, _state):
+        if keyval == Gdk.KEY_Escape:
+            win.close(); return True
+        return False
+    kc.connect("key-pressed", on_key)
+    return kc
+
+def list_monitors(display: Gdk.Display):
+    model: Gio.ListModel = display.get_monitors()   # GTK4
+    return [model.get_item(i) for i in range(model.get_n_items())]
+
+def make_window(args, display: Gdk.Display, monitor: Gdk.Monitor|None):
+    win = Gtk.Window()
+    win.set_title("Catppuccin Mocha Popup")
+    win.add_css_class("overlay")
+    win.set_decorated(False)
+    win.set_resizable(False)
+    win.set_focusable(True)
+
+    if HAS_LAYER and not args.no_layer:
+        GtkLayerShell.init_for_window(win)
+        GtkLayerShell.set_layer(win, GtkLayerShell.Layer.OVERLAY)
+        GtkLayerShell.set_keyboard_interactivity(win, True)
+        GtkLayerShell.set_mouse_interactivity(win, True)
+        GtkLayerShell.auto_exclusive_zone_enable(win)
+        if monitor is not None:
+            GtkLayerShell.set_monitor(win, monitor)
+
+    root = Gtk.Overlay()
+    root.set_hexpand(True); root.set_vexpand(True)
+
+    center = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+    center.set_valign(Gtk.Align.CENTER); center.set_halign(Gtk.Align.CENTER)
+
+    card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+    card.set_name("card")
+
+    title = Gtk.Label(label=args.title)
+    title.set_wrap(True); title.set_justify(Gtk.Justification.CENTER)
+    title.set_halign(Gtk.Align.CENTER); title.set_name("title")
+
+    msg = Gtk.Label(label=args.message)
+    msg.set_wrap(True); msg.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+    msg.set_justify(Gtk.Justification.CENTER); msg.set_halign(Gtk.Align.CENTER)
+    msg.set_name("msg")
+
+    btn_box = Gtk.Box(spacing=8)
+    btn_box.set_halign(Gtk.Align.CENTER); btn_box.set_valign(Gtk.Align.CENTER)
+
+    close_btn = Gtk.Button(label="Dismiss")
+    close_btn.add_css_class("ghost")
+    def clos_win(_btn):
+        print("close button clicked")
+        win.close()
+    close_btn.connect("clicked", clos_win)
+    btn_box.append(close_btn)
+
+    if args.snooze > 0:
+        snooze_btn = Gtk.Button(label=f"Snooze {args.snooze//60} min")
+        snooze_btn.add_css_class("cta")
+        def snooze(_btn):
+            print("snooze button clicked")
+            win.close()
+            if args.resched:
+                exe = os.path.abspath(sys.argv[0])
+                cmd = (
+                    f"bash -lc 'sleep {args.snooze}; "
+                    f"{shell_quote(exe)} --title {shell_quote(args.title)} "
+                    f"--message {shell_quote(args.message)} "
+                    f"--opacity {args.opacity} --accent {shell_quote(args.accent)} "
+                    f"--card-bg {shell_quote(args.card_bg)} --monitor {shell_quote(args.monitor)} "
+                    f"{'--no-layer' if args.no_layer else ''} "
+                    f"{'--timeout '+str(args.timeout) if args.timeout else ''}'"
+                )
+                GLib.spawn_command_line_async(cmd)
+        snooze_btn.connect("clicked", snooze)
+        btn_box.append(snooze_btn)
+
+    card.append(title); card.append(msg); card.append(btn_box)
+    center.append(card)
+    root.set_child(center)
+    win.add_controller(key_close(win))
+    win.set_child(root)
+
+    provider = Gtk.CssProvider()
+    provider.load_from_data(build_css(args.opacity, args.accent, args.card_bg).encode())
+    Gtk.StyleContext.add_provider_for_display(
+        Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+    )
+
+    if args.timeout > 0:
+        GLib.timeout_add_seconds(args.timeout, lambda: (win.close(), False)[1])
+
+    if not (HAS_LAYER and not args.no_layer):
+        win.fullscreen()
+
+    win.present()
+    def force_input_capture(widget):
+        click = Gtk.GestureClick()
+        click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        widget.add_controller(click)
+    force_input_capture(win)
+    return win
+
+def parse_args():
+    p = argparse.ArgumentParser(description="Catppuccin Mocha fullscreen popup")
+    p.add_argument("--title", default="  Time to stop! ")
+    p.add_argument("--message", default="It's time to stop and shut down your computer.")
+    p.add_argument("--timeout", type=int, default=0)
+    p.add_argument("--snooze", type=int, default=0)
+    p.add_argument("--resched", action="store_true")
+    p.add_argument("--opacity", type=float, default=0.40)
+    p.add_argument("--accent", default="mauve", choices=list(C.keys()))
+    p.add_argument("--card-bg", default="base", choices=list(C.keys()))
+    p.add_argument("--monitor", default="primary")   # primary|all|index
+    p.add_argument("--no-layer", action="store_true")
+    return p.parse_args()
+
+def main():
+    args = parse_args()
+    app = Gtk.Application()
+    windows = []
+
+    def on_activate(_app):
+        display = Gdk.Display.get_default()
+        mons = list_monitors(display)
+
+        # Sélection des cibles
+        if args.monitor == "all":
+            targets = mons
+        else:
+            idx = None
+            try:
+                idx = int(args.monitor)
+            except (ValueError, TypeError):
+                pass
+            if idx is not None and mons:
+                targets = [mons[idx]] if 0 <= idx < len(mons) else [mons[0]]
+            else:
+                # "primary" (ou autre chaîne) => premier moniteur
+                targets = [mons[0]] if mons else [None]
+
+        targets = [t for t in targets if t is not None] or [None]
+
+        for mon in targets:
+            win = make_window(args, display, mon)
+            win.set_application(app)
+            windows.append(win)
+
+    app.connect("activate", on_activate)
+    sys.exit(app.run(None))
+
+if __name__ == "__main__":
+    main()
+
