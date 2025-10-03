@@ -1,4 +1,5 @@
 alias gs="git status"
+alias gsa="git stash"
 alias gf="git fetch --all"
 alias gl="git log"
 alias gd="git diff"
