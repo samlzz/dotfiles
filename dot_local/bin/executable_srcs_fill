@@ -10,7 +10,8 @@ update_sources() {
     traverse() {
         local dir="$1"
         local file_list dir_list sub;
-        file_list=$(find "$dir" -mindepth 1 -maxdepth 1 -type f -name '*.c' -not -name '_*' 2>/dev/null \
+        file_list=$(find "$dir" -mindepth 1 -maxdepth 1 -type f \
+			 -name '*.cpp' -or -name '*.c' -not -name '_*' 2>/dev/null \
             | git check-ignore -nv --stdin 2>/dev/null \
             | awk '/^::\t/ { print $2 }' | sort | sed 's|^\./||')
 

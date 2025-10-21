@@ -15,6 +15,7 @@ alias ccw="gcc -Wall -Wextra -Werror"
 alias mk="make"
 alias py="python3"
 alias cm="chezmoi"
+alias cmdiff="chezmoi diff | delta"
 
 alias sz="source $HOME/.zshrc"
 
