@@ -1,34 +1,55 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from queue import Full
 import argparse, sys, os
+
 import gi
 gi.require_version('Gtk', '4.0')
-gi.require_version('Gdk', '4.0')
-from gi.repository import Gtk, Gdk, GLib, Gio
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, Gdk, Adw, GLib
 
-# gtk-layer-shell (optionnel)
-try:
-    gi.require_version('GtkLayerShell', '0.1')
-    from gi.repository import GtkLayerShell
-    HAS_LAYER = True
-except Exception:
-    HAS_LAYER = False
-
+# ---------------- Catppuccin Mocha color palette ----------------
 C = {
-    "rosewater":"#f5e0dc","flamingo":"#f2cdcd","pink":"#f5c2e7","mauve":"#cba6f7",
-    "red":"#f38ba8","maroon":"#eba0ac","peach":"#fab387","yellow":"#f9e2af",
-    "green":"#a6e3a1","teal":"#94e2d5","sky":"#89dceb","sapphire":"#74c7ec",
-    "blue":"#89b4fa","lavender":"#b4befe","text":"#cdd6f4","subtext1":"#bac2de",
-    "subtext0":"#a6adc8","overlay2":"#9399b2","overlay1":"#7f849c","overlay0":"#6c7086",
-    "surface2":"#585b70","surface1":"#45475a","surface0":"#313244","base":"#1e1e2e",
-    "mantle":"#181825","crust":"#11111b"
+    "rosewater":"#f5e0dc",
+    "flamingo":"#f2cdcd",
+    "pink":"#f5c2e7",
+    "mauve":"#cba6f7",
+    "red":"#f38ba8",
+    "maroon":"#eba0ac",
+    "peach":"#fab387",
+    "yellow":"#f9e2af",
+    "green":"#a6e3a1",
+    "teal":"#94e2d5",
+    "sky":"#89dceb",
+    "sapphire":"#74c7ec",
+    "blue":"#89b4fa",
+    "lavender":"#b4befe",
+    "text":"#cdd6f4",
+    "subtext1":"#bac2de",
+    "subtext0":"#a6adc8",
+    "overlay2":"#9399b2",
+    "overlay1":"#7f849c",
+    "overlay0":"#6c7086",
+    "surface2":"#585b70",
+    "surface1":"#45475a",
+    "surface0":"#313244",
+    "base":"#1e1e2e",
+    "mantle":"#181825",
+    "crust":"#11111b"
 }
 
 def build_css(bg_alpha=0.40, accent="mauve", card_bg="base"):
-    r = int(C[accent][1:3],16); g = int(C[accent][3:5],16); b = int(C[accent][5:7],16)
+    """Generate dynamic CSS for the popup style."""
+    (r, g, b) = (
+        int(C[accent][1:3],16), int(C[accent][3:5],16), int(C[accent][5:7],16)
+    )
     return f"""
-    window.overlay {{
+    window, window.background, .transparent-bg {{
+        background-color: transparent;
+        background: transparent;
+    }}
+    .overlay-bg {{
         background-color: rgba({r}, {g}, {b}, {bg_alpha});
     }}
     #card {{
@@ -54,6 +75,7 @@ def build_css(bg_alpha=0.40, accent="mauve", card_bg="base"):
         color: #0b0b0f;
         border-radius: 14px;
         padding: 10px 18px;
+        margin-top: 4px;
         border: none;
         font-weight: 700;
     }}
@@ -62,174 +84,238 @@ def build_css(bg_alpha=0.40, accent="mauve", card_bg="base"):
         color: {C['text']};
         border-radius: 14px;
         padding: 10px 16px;
+        margin-top: 4px;
         border: 1px solid {C['surface2']};
         font-weight: 600;
     }}
-    button.cta:hover {{ filter: brightness(1.05); }}
-    button.ghost:hover {{ filter: brightness(1.05); }}
+    button.cta:hover, button.ghost:hover {{
+        filter: brightness(1.05);
+    }}
     """
 
-def shell_quote(s: str) -> str:
-    return "'" + s.replace("'", "'\\''") + "'"
+# ---------------- argparse helpers ----------------
+def float_0_1(v: str) -> float:
+    """Parse a float between 0.0 and 1.0."""
+    try:
+        f = float(v)
+    except ValueError:
+        raise argparse.ArgumentTypeError("must be a floating-point number")
+    if not (0.0 <= f <= 1.0):
+        raise argparse.ArgumentTypeError("must be between 0.0 and 1.0")
+    return f
 
-def click_to_close(win):
-    gc = Gtk.GestureClick()
-    gc.connect("released", lambda *_: win.close())
-    return gc
+def nonneg_int(v: str) -> int:
+    """Parse a non-negative integer."""
+    try:
+        n = int(v)
+    except ValueError:
+        raise argparse.ArgumentTypeError("must be an integer")
+    if n < 0:
+        raise argparse.ArgumentTypeError("must be >= 0")
+    return n
 
-def key_close(win):
-    kc = Gtk.EventControllerKey()
-    def on_key(_ctrl, keyval, _keycode, _state):
-        if keyval == Gdk.KEY_Escape:
-            win.close(); return True
-        return False
-    kc.connect("key-pressed", on_key)
-    return kc
-
-def list_monitors(display: Gdk.Display):
-    model: Gio.ListModel = display.get_monitors()   # GTK4
-    return [model.get_item(i) for i in range(model.get_n_items())]
-
-def make_window(args, display: Gdk.Display, monitor: Gdk.Monitor|None):
-    win = Gtk.Window()
-    win.set_title("Catppuccin Mocha Popup")
-    win.add_css_class("overlay")
-    win.set_decorated(False)
-    win.set_resizable(False)
-    win.set_focusable(True)
-
-    if HAS_LAYER and not args.no_layer:
-        GtkLayerShell.init_for_window(win)
-        GtkLayerShell.set_layer(win, GtkLayerShell.Layer.OVERLAY)
-        GtkLayerShell.set_keyboard_interactivity(win, True)
-        GtkLayerShell.set_mouse_interactivity(win, True)
-        GtkLayerShell.auto_exclusive_zone_enable(win)
-        if monitor is not None:
-            GtkLayerShell.set_monitor(win, monitor)
-
-    root = Gtk.Overlay()
-    root.set_hexpand(True); root.set_vexpand(True)
-
-    center = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-    center.set_valign(Gtk.Align.CENTER); center.set_halign(Gtk.Align.CENTER)
-
-    card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-    card.set_name("card")
-
-    title = Gtk.Label(label=args.title)
-    title.set_wrap(True); title.set_justify(Gtk.Justification.CENTER)
-    title.set_halign(Gtk.Align.CENTER); title.set_name("title")
-
-    msg = Gtk.Label(label=args.message)
-    msg.set_wrap(True); msg.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-    msg.set_justify(Gtk.Justification.CENTER); msg.set_halign(Gtk.Align.CENTER)
-    msg.set_name("msg")
-
-    btn_box = Gtk.Box(spacing=8)
-    btn_box.set_halign(Gtk.Align.CENTER); btn_box.set_valign(Gtk.Align.CENTER)
-
-    close_btn = Gtk.Button(label="Dismiss")
-    close_btn.add_css_class("ghost")
-    def clos_win(_btn):
-        print("close button clicked")
-        win.close()
-    close_btn.connect("clicked", clos_win)
-    btn_box.append(close_btn)
-
-    if args.snooze > 0:
-        snooze_btn = Gtk.Button(label=f"Snooze {args.snooze//60} min")
-        snooze_btn.add_css_class("cta")
-        def snooze(_btn):
-            print("snooze button clicked")
-            win.close()
-            if args.resched:
-                exe = os.path.abspath(sys.argv[0])
-                cmd = (
-                    f"bash -lc 'sleep {args.snooze}; "
-                    f"{shell_quote(exe)} --title {shell_quote(args.title)} "
-                    f"--message {shell_quote(args.message)} "
-                    f"--opacity {args.opacity} --accent {shell_quote(args.accent)} "
-                    f"--card-bg {shell_quote(args.card_bg)} --monitor {shell_quote(args.monitor)} "
-                    f"{'--no-layer' if args.no_layer else ''} "
-                    f"{'--timeout '+str(args.timeout) if args.timeout else ''}'"
-                )
-                GLib.spawn_command_line_async(cmd)
-        snooze_btn.connect("clicked", snooze)
-        btn_box.append(snooze_btn)
-
-    card.append(title); card.append(msg); card.append(btn_box)
-    center.append(card)
-    root.set_child(center)
-    win.add_controller(key_close(win))
-    win.set_child(root)
-
-    provider = Gtk.CssProvider()
-    provider.load_from_data(build_css(args.opacity, args.accent, args.card_bg).encode())
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
-    )
-
-    if args.timeout > 0:
-        GLib.timeout_add_seconds(args.timeout, lambda: (win.close(), False)[1])
-
-    if not (HAS_LAYER and not args.no_layer):
-        win.fullscreen()
-
-    win.present()
-    def force_input_capture(widget):
-        click = Gtk.GestureClick()
-        click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
-        widget.add_controller(click)
-    force_input_capture(win)
-    return win
+def monitor_value(v: str):
+    """Parse monitor selection (all | primary | <index>)."""
+    if v in ("all", "primary"):
+        return v
+    try:
+        idx = int(v)
+        if idx < 0:
+            raise argparse.ArgumentTypeError("monitor index must be >= 0")
+        return idx
+    except ValueError:
+        return "primary"
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Catppuccin Mocha fullscreen popup")
+    p = argparse.ArgumentParser(description="Catppuccin Mocha fullscreen popup (Adw/GTK4)")
     p.add_argument("--title", default="  Time to stop! ")
     p.add_argument("--message", default="It's time to stop and shut down your computer.")
-    p.add_argument("--timeout", type=int, default=0)
-    p.add_argument("--snooze", type=int, default=0)
-    p.add_argument("--resched", action="store_true")
-    p.add_argument("--opacity", type=float, default=0.40)
-    p.add_argument("--accent", default="mauve", choices=list(C.keys()))
-    p.add_argument("--card-bg", default="base", choices=list(C.keys()))
-    p.add_argument("--monitor", default="primary")   # primary|all|index
-    p.add_argument("--no-layer", action="store_true")
+    p.add_argument("--close-btn", action="store_true", default=False)
+    p.add_argument("--timeout", type=nonneg_int, default=0, help="auto-close timeout (s, 0=off)")
+    p.add_argument("--snooze", type=nonneg_int, default=0, help="snooze time (s, 0=off)")
+    p.add_argument("--opacity", type=float_0_1, default=0.40)
+    p.add_argument("--accent", choices=list(C.keys()), default="mauve")
+    p.add_argument("--card-bg", choices=list(C.keys()), default="base")
+    p.add_argument("--monitor", type=monitor_value, default="all", help="all|primary|index")
     return p.parse_args()
 
+# ---------------- monitor selection ----------------
+def list_monitors(display: Gdk.Display):
+    model = display.get_monitors()
+    return [model.get_item(i) for i in range(model.get_n_items())]
+
+def select_monitors(display: Gdk.Display, req):
+    mons = list_monitors(display)
+    if not mons:
+        return [None]
+    if req == "all":
+        return mons
+    if req == "primary":
+        return [mons[0]]
+    idx = int(req)
+    return [mons[idx]] if 0 <= idx < len(mons) else [mons[0]]
+
+# ---------------- main popup window ----------------
+class FullscreenPopup(Gtk.ApplicationWindow):
+
+    def __init__(self, p_args, monitor: Gdk.Monitor|None, *a, **kw):
+        super().__init__(*a, **kw)
+
+        self.monitor = monitor
+        self.init_win(p_args.opacity)
+
+        self.snooze_duration = p_args.snooze
+        self.init_popup_center(p_args)
+
+        self.init_css(p_args)
+
+        self.set_can_target(True)
+        self.root.set_can_target(True)
+        self.center.set_can_target(True)
+
+        if p_args.timeout > 0:
+            GLib.timeout_add_seconds(p_args.timeout, self._timeout_close)
+
+    def on_any_click(self, *args):
+        print("CLICK ANYWHERE")
+
+    def init_win(self, opacity: float):
+        self.set_title("Catppuccin Mocha Popup")
+        self.set_decorated(False)
+        self.set_resizable(False)
+        self.set_focusable(True)
+
+        self.root = Gtk.Overlay()
+        self.root.set_hexpand(True)
+        self.root.set_vexpand(True)
+        self.root.add_css_class('transparent-bg')
+
+        self.bg = Gtk.Box()
+        self.bg.set_hexpand(True)
+        self.bg.set_vexpand(True)
+        self.bg.add_css_class('overlay-bg')
+        #self.bg.set_opacity(opacity)
+        self.root.set_child(self.bg)
+
+        self.center = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.center.set_valign(Gtk.Align.CENTER)
+        self.center.set_halign(Gtk.Align.CENTER)
+        self.center.add_css_class('overlay')
+        self.root.add_overlay(self.center)
+
+        self.add_css_class('transparent-bg')
+        self.set_child(self.root)
+
+    def init_popup_center(self, args):
+        card = self.get_card_popup(args.title, args.message)
+        buttons_box = self.get_buttons(args.close_btn, args.snooze > 0)
+        card.append(buttons_box)
+        self.center.append(card)
+        
+    def init_css(self, args):
+        css_data = build_css(args.opacity, args.accent, args.card_bg)
+        provider= Gtk.CssProvider()
+        provider.load_from_data(css_data.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+        )
+
+    def get_card_popup(self, title, message) -> Gtk.Box:
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        card.set_name("card")
+
+        title = Gtk.Label(label=title)
+        title.set_wrap(True)
+        title.set_justify(Gtk.Justification.CENTER)
+        title.set_halign(Gtk.Align.CENTER)
+        title.set_name("title")
+
+        msg = Gtk.Label(label=message)
+        msg.set_wrap(True)
+        msg.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        msg.set_justify(Gtk.Justification.CENTER)
+        msg.set_halign(Gtk.Align.CENTER)
+        msg.set_name("msg")
+
+        card.append(title)
+        card.append(msg)
+        return card
+
+
+    def get_buttons(self, has_close_btn, has_snz_btn) -> Gtk.Box:
+        btn_box = Gtk.Box(spacing=8)
+        btn_box.set_halign(Gtk.Align.CENTER)
+        btn_box.set_valign(Gtk.Align.CENTER)
+
+        if has_close_btn:
+            close_btn = Gtk.Button(label="Dismiss")
+            close_btn.add_css_class("ghost")
+            close_btn.connect('clicked', self.on_close_clicked)
+            btn_box.append(close_btn)
+
+        if has_snz_btn:
+            snooze_btn = Gtk.Button(label=f"Snooze {self.snooze_duration//60} min")
+            snooze_btn.add_css_class("cta")
+            snooze_btn.connect('clicked', self.on_snooze_clicked)
+            btn_box.append(snooze_btn)
+
+        return btn_box
+
+    def fullscreen_display(self, display: Gdk.Display):
+        monitor = select_monitors(display, "primary")[0]
+        if monitor is None:
+            return
+        dim = monitor.get_geometry()
+        self.set_default_size(dim.width, dim.height)
+        self.fullscreen()
+        self.present()
+
+    # --- Callbacks ---
+    def on_close_clicked(self, _btn):
+        self.close()
+
+    def on_snooze_clicked(self, _btn):
+        print(f"snooze button clicked → relaunch in {self.snooze_duration} seconds")
+
+        self.set_visible(False)
+        GLib.timeout_add_seconds(self.snooze_duration, self.reopen_popup)
+        return False
+
+    def reopen_popup(self):
+        print("Snooze period finished → reopening popup")
+        self.set_visible(True)
+        self.present()
+        return False
+
+    def _timeout_close(self):
+        self.close()
+        return False
+
+    def press(self, *_):
+        print("press")
+
+    def release(self, *_):
+        print("release")
+
+class MyApp(Adw.Application):
+    def __init__(self, p_args, **kwargs):
+        super().__init__(**kwargs)
+        self.args = p_args
+        self.connect('activate', self.on_activate)
+
+    def on_activate(self, app):
+        display = Gdk.Display.get_default()
+        for mon in select_monitors(display, self.args.monitor):
+            win = FullscreenPopup(self.args, mon, application=app)
+            win.fullscreen_display(display)
+            app.add_window(win)
+
+
+# ---------------- entrypoint ----------------
 def main():
     args = parse_args()
-    app = Gtk.Application()
-    windows = []
-
-    def on_activate(_app):
-        display = Gdk.Display.get_default()
-        mons = list_monitors(display)
-
-        # Sélection des cibles
-        if args.monitor == "all":
-            targets = mons
-        else:
-            idx = None
-            try:
-                idx = int(args.monitor)
-            except (ValueError, TypeError):
-                pass
-            if idx is not None and mons:
-                targets = [mons[idx]] if 0 <= idx < len(mons) else [mons[0]]
-            else:
-                # "primary" (ou autre chaîne) => premier moniteur
-                targets = [mons[0]] if mons else [None]
-
-        targets = [t for t in targets if t is not None] or [None]
-
-        for mon in targets:
-            win = make_window(args, display, mon)
-            win.set_application(app)
-            windows.append(win)
-
-    app.connect("activate", on_activate)
-    sys.exit(app.run(None))
+    app = MyApp(args, application_id="com.fspopup.GtkApplication")
+    sys.exit(app.run())
 
 if __name__ == "__main__":
     main()
