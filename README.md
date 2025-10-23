@@ -25,11 +25,11 @@ This repository contains my personal dotfiles, configuration, and setup automati
 
 ```text
 samlzz-dotfiles/
-├── chezmoi_config                    # chezmoi diff customization (uses delta)
-├── code_settings.json               # VS Code user settings (tmpl linked)
-├── dot_*                             # Generic dotfiles: .zshrc, .vimrc, .gitconfig…
-├── dot_config/                      # XDG_CONFIG_HOME subtree
-│   ├── hypr/                        # Hyprland config: idle, lock, paper, plugins
+├── chezmoi_config                  # chezmoi diff customization (uses delta)
+├── code_settings.json              # VS Code user settings (tmpl linked)
+├── dot_*                           # Generic dotfiles: .zshrc, .vimrc, .gitconfig…
+├── dot_config/                     # XDG_CONFIG_HOME subtree
+│   ├── hypr/                       # Hyprland config: idle, lock, paper, plugins
 │   ├── alacritty/                  # Terminal theme + settings
 │   ├── rofi/                       # UI launcher with Catppuccin styles
 │   ├── waybar/                     # Waybar modules, scripts, and styling
@@ -37,10 +37,11 @@ samlzz-dotfiles/
 │   └── tmux/                       # Tmux configuration
 ├── dot_local/
 │   ├── bin/                        # CLI scripts (e.g. `ftinit`, `rm_secure`)
-│   └── share/                      # XDG_STATE_HONE: Shell extensions, completions, omz themes, ...
+│   └── share/                      # XDG_DATA_HOME: my utils (e.g. shell utils, code extensions)
+|   └── state/                      # XDG_STATE_HOME: shell history, completions, ect...
 ├── packages/                       # Lists of packages: pacman, AUR, snap
 ├── run_once_*.sh                   # chezmoi init scripts: bootstrap, zsh, system services
-└── Pictures/wallpapers/           # Wallpapers for Hyprland (used by hyprpaper)
+└── Pictures/wallpapers/            # Wallpapers for Hyprland (used by hyprpaper)
 ```
 
 ---

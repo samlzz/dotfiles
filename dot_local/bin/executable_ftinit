@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-TEMPLATE_DIR="$XDG_STATE_HOME/ctools"
+TEMPLATE_DIR="$XDG_DATA_HOME/ctools"
 MAKEFILE_NAME_VAR_PATTERN='^NAME[[:space:]]*\?='
 
 init_template_dir() {

@@ -22,4 +22,4 @@ if command -v "rm_secure" &>/dev/null; then
 	alias rm="rm_secure"
 fi
 
-source "$XDG_STATE_HOME/ctools/git.zsh"
+source "$XDG_DATA_HOME/ctools/git.zsh"

@@ -1,24 +1,16 @@
 ### ─────────────────────────────────────────────────────────────
 ### Instant Prompt (Powerlevel10k) — MUST STAY AT THE TOP
 ### ─────────────────────────────────────────────────────────────
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+if [[ -r "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
-
-### ─────────────────────────────────────────────────────────────
-### XDG Environment Variables
-### ─────────────────────────────────────────────────────────────
-export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/share}"
-export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 
 mkdir -p "$XDG_STATE_HOME/zsh" "$XDG_CACHE_HOME/zsh"
 
 ### ─────────────────────────────────────────────────────────────
 ### Oh-My-Zsh + Plugins
 ### ─────────────────────────────────────────────────────────────
-export ZSH="$XDG_STATE_HOME/oh-my-zsh"
 ZSH_THEME="powerlevel10k/powerlevel10k"
-
 plugins=(
   you-should-use
   zsh-syntax-highlighting
@@ -26,12 +18,11 @@ plugins=(
   zsh-autosuggestions
 )
 
-export ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$HOST-$ZSH_VERSION"
-source "$ZSH/oh-my-zsh.sh"
-
 ### ─────────────────────────────────────────────────────────────
 ### Oh-My-Zsh / Completion Settings
 ### ─────────────────────────────────────────────────────────────
+source "$ZSH/oh-my-zsh.sh"
+
 CASE_SENSITIVE="true"
 ALWAYS_TO_END="true"
 COMPLETION_WAITING_DOTS="true"
@@ -72,8 +63,6 @@ path+=(
 
 export PATH
 
-export LESS='--mouse --wheel-lines=3'
-
 # FZF Theme
 export FZF_DEFAULT_OPTS=" \
 --color=bg+:#363a4f,bg:#24273a,spinner:#f4dbd6,hl:#ed8796 \
@@ -88,18 +77,6 @@ export FZF_DEFAULT_OPTS=" \
 # Zoxide (cd alternative)
 if command -v zoxide &> /dev/null; then
   eval "$(zoxide init zsh --cmd cd)"
-fi
-
-# Use bat as manpager with stripped ANSI
-if command -v bat &> /dev/null; then
-  export MANPAGER="sh -c 'sed -u -e \"s/\\x1B\[[0-9;]*m//g; s/.\\x08//g\" | bat -p -lman'"
-fi
-
-# Default Editor
-if command -v vim &> /dev/null; then
-  export EDITOR=vim
-else
-  export EDITOR=vi
 fi
 
 # Use trashcli to rm files 10 minutes later
@@ -133,9 +110,9 @@ zstyle ':completion:*' menu yes select
 ### ─────────────────────────────────────────────────────────────
 ### Load Custom Features
 ### ─────────────────────────────────────────────────────────────
-[[ -f "$XDG_STATE_HOME/ctools/utils.zsh" ]] && source "$XDG_STATE_HOME/ctools/utils.zsh"
+[[ -f "$XDG_DATA_HOME/ctools/utils.zsh" ]] && source "$XDG_DATA_HOME/ctools/utils.zsh"
 
-[[ -f "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh" ]] && source "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh"
+[[ -f "$XDG_DATA_HOME/zsh/completion/custom_completion.zsh" ]] && source "$XDG_DATA_HOME/zsh/completion/custom_completion.zsh"
 
 ### ─────────────────────────────────────────────────────────────
 ### nvm configuration
@@ -144,3 +121,7 @@ export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.config/nvm
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 source /usr/share/nvm/init-nvm.sh
 
+### ─────────────────────────────────────────────────────────────
+### Java configuration
+### ─────────────────────────────────────────────────────────────
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk

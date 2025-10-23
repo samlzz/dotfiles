@@ -1,4 +1,4 @@
-source "$XDG_STATE_HOME/ctools/aliases.zsh"
+source "$XDG_DATA_HOME/ctools/aliases.zsh"
 
 #? for get the prototype of a function in man
 manproto() {
