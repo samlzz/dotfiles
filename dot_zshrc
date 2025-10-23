@@ -5,7 +5,8 @@ if [[ -r "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-mkdir -p "$XDG_STATE_HOME/zsh" "$XDG_CACHE_HOME/zsh"
+[[ ! "$XDG_STATE_HOME/zsh" ]] && mkdir "$XDG_STATE_HOME/zsh"
+[[ ! "$XDG_CACHE_HOME/zsh" ]] && mkdir "$XDG_CACHE_HOME/zsh"
 
 ### ─────────────────────────────────────────────────────────────
 ### Oh-My-Zsh + Plugins
