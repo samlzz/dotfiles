@@ -16,6 +16,8 @@ alias mk="make"
 alias py="python3"
 alias cm="chezmoi"
 
+alias e="$EDITOR"
+
 alias sz="source $HOME/.zshrc"
 
 if command -v "rm_secure" &>/dev/null; then
