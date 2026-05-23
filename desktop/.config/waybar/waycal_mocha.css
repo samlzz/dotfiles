@@ -1,0 +1,53 @@
+window.waycal {
+    background: transparent;
+}
+.waycal-root {
+    background-color: #1e1e2e;          /* base */
+    border: 2px solid #45475a;          /* surface1 */
+    border-radius: 0;
+    padding: 1.08em 1.38em;
+    color: #cdd6f4;                     /* text */
+    font-family: "MesloLGSDZ Nerd Font", monospace;
+    font-size: 13px;
+    min-width: 20em;
+}
+.waycal-root.rounded {
+    background-color: rgba(30, 30, 46, 0.96);   /* base */
+    border: 2px solid transparent;
+    border-radius: 1.23em;
+}
+.waycal-header {
+    font-weight: bold;
+    font-size: 1.15em;
+    color: #cba6f7;                     /* mauve */
+    padding-bottom: 0.4em;
+}
+.waycal-weekday {
+    color: #89b4fa;                     /* blue */
+    font-weight: bold;
+    padding: 0.15em 0.46em;
+}
+.waycal-day {
+    padding: 0.31em 0.54em;
+    min-width: 1.38em;
+    color: #cdd6f4;                     /* text */
+}
+.waycal-day.dim {
+    opacity: 0.3;
+}
+.waycal-day.today {
+    background-color: #cba6f7;          /* mauve */
+    color: #1e1e2e;                     /* base */
+    border-radius: 0;
+    font-weight: bold;
+}
+.waycal-root.rounded .waycal-day.today {
+    border-radius: 0.62em;
+}
+.waycal-footer {
+    color: #6c7086;                     /* overlay0 */
+    font-size: 0.77em;
+    padding-top: 0.8em;
+    margin-top: 0.6em;
+    border-top: 1px solid #313244;      /* surface0 */
+}

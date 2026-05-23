@@ -1,0 +1,406 @@
+{
+	"layer": "bottom",
+	"position": "top",
+	"modules-left": [
+		"group/monitoring",
+		"tray",
+		"group/group-media"
+	],
+	"modules-center": [
+		"hyprland/window",
+		"hyprland/workspaces",
+		"hyprland/workspaces#special",
+		"custom/notifications",
+		"hyprland/submap"
+	],
+	"modules-right": [
+		"custom/timer",
+		"custom/clipboard",
+		"group/connectivity",
+		"group/system",
+		"group/group-power"
+	],
+	"group/monitoring": {
+		"orientation": "horizontal",
+		"drawer": {
+			"transition-duration": 600,
+			"transition-to-right": true,
+			"click-to-reveal": true
+		},
+		"modules": [
+			"custom/distrib_ico",
+			"custom/updates",
+			"cpu",
+			"memory",
+			"temperature",
+			"custom/idle-inhibitor",
+			"power-profiles-daemon",
+			"custom/colorpicker"
+		]
+	},
+	"custom/distrib_ico": {
+		"format": "",
+		"tooltip": false
+	},
+	"custom/updates": {
+		"format": "  {}",
+		"exec": "checkupdates | wc -l",
+		"tooltip-format": "launch pkgmanager",
+		"interval": 60,
+		"on-click": "alacritty --class=term-float -e pkgmanager"
+	},
+	"cpu": {
+		"interval": 15,
+		"format": "  {}%",
+		"max-length": 10
+	},
+	"memory": {
+		"interval": 30,
+		"format": "  {}%",
+		"max-length": 10
+	},
+	"temperature": {
+		"critical-threshold": 80,
+		"format-critical": "{temperatureC}°C ",
+		"format": "{temperatureC}°C {icon}",
+		"format-icons": {
+			"0": "",
+			"50": "",
+			"70": ""
+		}
+	},
+	"custom/idle-inhibitor": {
+		"format": "{}",
+		"exec": "$HOME/.config/waybar/scripts/check-idle.sh",
+		"on-click": "$HOME/.config/waybar/scripts/toggle-idle.sh",
+		"tooltip": false,
+		"signal": 10
+	},
+	"power-profiles-daemon": {
+		"format": "{icon}",
+		"tooltip-format": "Power profile: {profile}\nDriver: {driver}",
+		"tooltip": true,
+		"format-icons": {
+			"default": "",
+			"performance": "",
+			"balanced": "",
+			"power-saver": ""
+		}
+	},
+	"custom/colorpicker": {
+		"format": "",
+		"on-click": "~/.config/waybar/scripts/colorpicker.sh",
+		"tooltip": false
+	},
+	"tray": {
+		"icon-size": 20,
+		"spacing": 20
+	},
+	"group/group-media": {
+		"drawer": {
+			"transition-duration": 500,
+			"transition-left-to-right": true
+		},
+		"orientation": "horizontal",
+		"modules": [
+			"custom/cava",
+			"custom/media"
+		]
+	},
+	"custom/cava": {
+		"format": "{}",
+		"exec": "~/.config/waybar/scripts/cava.sh",
+		"restart-interval": 5,
+		"hide-empty-text": true,
+		"tooltip": false
+	},
+	"custom/media": {
+		"format": " {}",
+		"exec": "~/.config/waybar/scripts/media_info.sh --artist",
+		"interval": 2,
+		"max-length": 35,
+		"tootltip": false
+	},
+	"hyprland/window": {
+		"format": "{class}",
+		"icon": true,
+		"icon-size": 18,
+		"separate-outputs": true,
+		"rewrite": {
+			"dev.aunetx.deezer": "Deezer"
+		},
+		"tooltip": false
+	},
+	"hyprland/workspaces": {
+		"format": "{icon}",
+		"format-icons": {
+			"default": "󰐾",
+			"active": "󰝥",
+			"empty": "󰝦"
+		},
+		"all-outputs": false,
+		"persistent-workspaces": {
+			"*": 6
+		},
+		"sort-by": "number",
+		"on-scroll-up": "hyprctl dispatch workspace -1",
+		"on-scroll-down": "hyprctl dispatch workspace +1",
+		"smooth-scrolling-threshold": 1.0
+	},
+	"hyprland/workspaces#special": {
+		"format": "{windows}",
+		"format-window-separator": "",
+		"show-special": true,
+		"hide-if-empty": true,
+		"sort-by": "id",
+		"ignore-workspaces": [
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11"
+		],
+		"workspace-taskbar": {
+			"enable": true,
+			"update-active-window": true,
+			"format": "{icon} ",
+			"icon-size": 18
+		},
+		"on-click": "activate"
+	},
+	"custom/notifications": {
+		"tooltip": false,
+		"format": "{icon}",
+		"format-icons": {
+			"notification": "<span foreground='red'><sup></sup></span>",
+			"none": "",
+			"dnd-notification": " <span foreground='red'><sup></sup></span>",
+			"dnd-none": " ",
+			"inhibited-notification": "<span foreground='red'><sup></sup></span>",
+			"inhibited-none": "",
+			"dnd-inhibited-notification": " <span foreground='red'><sup></sup></span>",
+			"dnd-inhibited-none": " "
+		},
+		"return-type": "json",
+		"exec-if": "which swaync-client",
+		"exec": "swaync-client -swb",
+		"on-click": "swaync-client -t -sw",
+		"on-click-right": "swaync-client -d -sw",
+		"escape": true
+	},
+	"hyprland/submap": {
+		"format": " ✎",
+		"tooltip": true
+	},
+	"custom/timer": {
+		"format": "󱫣",
+		"tooltip-format": "Start an activity timer",
+		"on-click": "~/.config/waybar/scripts/timerpicker.py",
+		"interval": 60
+	},
+	"custom/clipboard": {
+		"format": "",
+		"tooltip": false,
+		"interval": 1,
+		"on-click": "~/.config/hypr/scripts/cliphist-fuzzel.sh",
+		"on-click-right": "cliphist wipe",
+		"on-click-middle": "rm -f ~/.cache/cliphist/db"
+	},
+	"group/connectivity": {
+		"orientation": "inherit",
+		"modules": [
+			"group/network",
+			"group/bluetooth"
+		]
+	},
+	"group/network": {
+		"orientation": "inherit",
+		"drawer": {
+			"transition-duration": 300,
+			"transition-left-to-right": false
+		},
+		"modules": [
+			"network",
+			"network#details"
+		]
+	},
+	"network": {
+		"format": "󰛳",
+		"format-wifi": "{icon}",
+		"format-disconnected": "󰲛",
+		"format-icons": {
+			"wifi": [
+				"󰤟",
+				"󰤢",
+				"󰤥",
+				"󰤨"
+			]
+		},
+		"on-click": "iwmenu -l custom --launcher-command \"fuzzel --dmenu --config $HOME/.config/fuzzel/wifi.ini\""
+	},
+	"network#details": {
+		"format": "{ifname}",
+		"format-wifi": "{essid} ({signalStrength}%)",
+		"format-disconnected": "",
+		"on-click": "iwmenu -l custom --launcher-command \"fuzzel --dmenu --config $HOME/.config/fuzzel/wifi.ini\""
+	},
+	"group/bluetooth": {
+		"orientation": "inherit",
+		"drawer": {
+			"transition-duration": 300,
+			"transition-left-to-right": false
+		},
+		"modules": [
+			"bluetooth",
+			"bluetooth#devices"
+		]
+	},
+	"bluetooth": {
+		"format": "󰂯",
+		"format-off": "󰂲",
+		"format-disabled": "󰂲",
+		"tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
+		"tooltip-format-connected": "{controller_alias}\t{controller_address}\n\n{num_connections} connected\n\n{device_enumerate}",
+		"tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+		"tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%",
+		"on-click": "bzmenu -l custom --launcher-command \"fuzzel --dmenu --config $HOME/.config/fuzzel/bluetooth.ini\""
+	},
+	"bluetooth#devices": {
+		"format": "",
+		"format-connected": "{num_connections} devices",
+		"tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
+		"tooltip-format-connected": "{controller_alias}\t{controller_address}\n\n{num_connections} connected\n\n{device_enumerate}",
+		"tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+		"tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}%"
+	},
+	"group/system": {
+		"orientation": "inherit",
+		"modules": [
+			"group/group-backlight",
+			"pulseaudio",
+			"battery",
+			"clock"
+		]
+	},
+	"group/group-backlight": {
+		"orientation": "horizontal",
+		"drawer": {
+			"transition-duration": 300,
+			"transition-left-to-right": false,
+			"click-to-reveal": true
+		},
+		"modules": [
+			"backlight",
+			"custom/kbd-backlight"
+		]
+	},
+	"backlight": {
+		"format": "{percent}% {icon}",
+		"format-icons": [
+			"󰝦",
+			"󰪞",
+			"󰪟",
+			"󰪠",
+			"󰪡",
+			"󰪢",
+			"󰪣",
+			"󰪤",
+			"󰪥"
+		],
+		"smooth-scrolling-threshold": 1.0,
+		"scroll-step": 2,
+		"on-scroll-up": "brightnessctl --quiet set +1%",
+		"on-scroll-down": "brightnessctl --quiet set 1%-",
+		"tooltip": false
+	},
+	"custom/kbd-backlight": {
+		"format": "{percentage}%   ",
+		"tooltip": false,
+		"interval": 2,
+		"exec": "~/.config/waybar/scripts/kbd_backlight_info.sh",
+		"return-type": "json",
+		"scroll-step": 2,
+		"on-scroll-up": "brightnessctl -qd chromeos::kbd_backlight set +1%",
+		"on-scroll-down": "brightnessctl -qd chromeos::kbd_backlight set 1%-"
+	},
+	"pulseaudio": {
+		"format": "{volume}% {icon}",
+		"format-muted": "{volume}% 󰝟",
+		"format-icons": [
+			"󰕿",
+			"󰖀",
+			"󰕾"
+		],
+		"smooth-scrolling-threshold": 1.0,
+		"tooltip": false
+	},
+	"battery": {
+		"interval": 10,
+		"states": {
+			"warn": 25,
+			"critical": 10
+		},
+		"format": "{capacity}% {icon}",
+		"format-critical": "{capacity}% {icon}󰈅",
+		"format-charging": "{capacity}% {icon}󱐋",
+		"format-charging-critical": "{capacity}% {icon}󱐋",
+		"format-icons": [
+			"󰁺",
+			"󰁻",
+			"󰁼",
+			"󰁽",
+			"󰁾",
+			"󰁿",
+			"󰂀",
+			"󰂁",
+			"󰂂",
+			"󰁹"
+		]
+	},
+	"clock": {
+		"interval": 1,
+		"format": "{:%H:%M:%S}",
+		"format-alt": "{:%d/%m/%Y}",
+		"tooltip": false,
+		"on-click": "~/.config/hypr/scripts/toggle-pannel.sh"
+	},
+	"group/group-power": {
+		"drawer": {
+			"transition-duration": 500,
+			"transition-left-to-right": false
+		},
+		"orientation": "horizontal",
+		"modules": [
+			"custom/power",
+			"custom/quit",
+			"custom/lock",
+			"custom/reboot"
+		]
+	},
+	"custom/quit": {
+		"format": "󰗼",
+		"on-click": "hyprctl dispatch exit",
+		"tooltip-format": "Log Out"
+	},
+	"custom/lock": {
+		"format": "󰍁",
+		"on-click": "/usr/local/bin/powerctl lock",
+		"tooltip-format": "Lock"
+	},
+	"custom/reboot": {
+		"format": "󰜉",
+		"on-click": "/usr/local/bin/powerctl reboot",
+		"tooltip-format": "Reboot"
+	},
+	"custom/power": {
+		"format": "",
+		"on-click": "/usr/local/bin/powerctl poweroff",
+		"tooltip-format": "Power off"
+	}
+}

@@ -1,0 +1,43 @@
+#!/usr/bin/env zsh
+
+function print_error() {
+	print -u2 'error: localenv: '"$@"
+}
+function print_warn() {
+	print -u2 'warn: localenv: '"$@"
+}
+
+
+if [[ "${ZSH_EVAL_CONTEXT}" != *:file* ]]; then
+  print_error "This script must be sourced: source ${0:t} [file.env]"
+  exit 1
+fi
+
+local env_file="${1:-.env}"
+
+if [[ ! -f "$env_file" ]]; then
+  print_error "file not found: $env_file"
+  return 1
+fi
+
+local count=0
+while IFS= read -r line || [[ -n "$line" ]]; do
+  [[ -z "$line" || "$line" == '#'* ]] && continue
+
+  line="${line#export }"
+  if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+    local key="${match[1]}"
+    local value="${match[2]}"
+
+    if [[ "$value" =~ ^\"(.*)\"$ ]] || [[ "$value" =~ ^\'(.*)\'$ ]]; then
+      value="${match[1]}"
+    fi
+
+    export "$key=$value"
+    (( count++ ))
+  else
+    print_warn "skipped line (invalid format) : $line"
+  fi
+done < "$env_file"
+
+print "✔ $count variable(s) exported from $env_file"

@@ -1,0 +1,33 @@
+map . set hidden!
+
+
+cmd remove ${{
+    if [ -z $fs ]; then
+        rm -fr $f
+    else
+        echo $fs
+        echo 'delete? [y/n]'
+        read ans
+
+        [ $ans = 'y' ] && (echo 'deleting files...' && rm -fr $fs) || (echo 'cancelled...')
+    fi
+}}
+
+map x cut
+map y copy
+map p paste
+
+map d delete
+# map dd delete
+# map dD push :remove
+
+cmd open &$OPENER "$f"
+map e $$EDITOR "$f"
+map i $$PAGER "$f"
+cmd help $$lf -doc | $PAGER
+map <f-1> help
+cmd maps $lf -remote "query $id maps" | $PAGER
+cmd nmaps $lf -remote "query $id nmaps" | $PAGER
+cmd vmaps $lf -remote "query $id vmaps" | $PAGER
+cmd cmaps $lf -remote "query $id cmaps" | $PAGER
+cmd cmds $lf -remote "query $id cmds" | $PAGER

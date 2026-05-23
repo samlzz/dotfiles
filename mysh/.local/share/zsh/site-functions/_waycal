@@ -1,0 +1,20 @@
+#compdef waycal
+
+_waycal() {
+    local -a args
+
+    args=(
+        '(--help -h)'{--help,-h}'[Show help message]'
+        '--anchor=[Anchor position on screen]:position:(top-right top-left bottom-right bottom-left)'
+        '--margin-top=[Top margin in pixels]:pixels'
+        '--margin-right=[Right margin in pixels]:pixels'
+        '--margin-bottom=[Bottom margin in pixels]:pixels'
+        '--margin-left=[Left margin in pixels]:pixels'
+        '--zoom=[Zoom factor (e.g. 1.5 for 150%)]:factor'
+        '--css-path=[Path to CSS file]:file:_files -g "*.css"'
+    )
+
+    _arguments -s $args
+}
+
+_waycal "$@"

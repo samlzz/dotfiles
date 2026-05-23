@@ -1,0 +1,10 @@
+[Unit]
+Description=Check batterie toutes les 3 minutes
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=3m
+Persistent=true
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,6 @@
+[Unit]
+Description=Alerte batterie faible
+
+[Service]
+Type=oneshot
+ExecStart=%E/hypr/scripts/low_battery.sh

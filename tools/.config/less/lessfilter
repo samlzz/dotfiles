@@ -1,0 +1,65 @@
+mime=$(file -bL --mime-type "$1")
+category=${mime%%/*}
+kind=${mime##*/}
+ext="${1##*.}"
+
+if [ -d "$1" ]; then
+	eza --git -hl --color=always --icons "$1"
+	exit 0
+fi
+
+case "$ext" in
+	md|markdown)
+		glow -s dark "$1"
+		exit 0
+		;;
+	json)
+		jq -C . "$1"
+		exit 0
+		;;
+	csv)
+		column -t -s, "$1" | bat --color=always -l csv
+		exit 0
+		;;
+	pdf)
+		pdftotext -l 10 "$1" - | bat --color=always -l markdown
+		exit 0
+		;;
+esac
+
+case "$mime" in
+	image/*)
+		chafa "$1"
+		exiftool "$1"
+		;;
+	audio/*|video/*)
+		ffprobe -v quiet -print_format json -show_format -show_streams "$1" 2>/dev/null | jq -C .
+		;;
+	application/json)
+		jq -C . "$1"
+		;;
+	application/pdf)
+		pdftotext -l 10 "$1" - | bat --color=always -l markdown
+		;;
+	application/zip)
+		unzip -l "$1"
+		;;
+	application/x-tar|application/gzip|application/x-bzip2|application/zstd|application/x-xz)
+		tar tf "$1"
+		;;
+	application/octet-stream|application/x-executable|application/x-sharedlib)
+		xxd "$1" | head -50
+		;;
+	text/markdown)
+		glow -s dark "$1"
+		;;
+	text/csv)
+		column -t -s, "$1" | bat --color=always -l csv
+		;;
+	text/*)
+		bat --color=always "$1"
+		;;
+	*)
+		lesspipe.sh "$1"
+		;;
+esac

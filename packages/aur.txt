@@ -1,0 +1,12 @@
+bzmenu-bin
+code-features
+code-marketplace
+deemix
+deezer-enhanced-bin
+http-parser
+hyprshot-gui-git
+hyprwave
+iwmenu-bin
+oxker-bin
+python-deezer-py
+uxplay

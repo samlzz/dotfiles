@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+
+GIT_DIR=$(git rev-parse --git-dir 2>/dev/null) || {
+	echo "Error: not in a git repository." >&2
+	exit 1
+}
+STATE_FILE="$GIT_DIR/mrebase-state"
+SCRIPT_NAME=$(basename "$0")
+
+BOLD=$'\e[1m'
+DIM=$'\e[2m'
+RED=$'\e[31m'
+GREEN=$'\e[32m'
+CYAN=$'\e[36m'
+RESET=$'\e[0m'
+
+step() { printf "\n${DIM}[%d/%d]${RESET} ${BOLD}${CYAN}%s${RESET}\n" "$1" "$2" "$3"; }
+ok() { printf "${GREEN}✓${RESET} ${CYAN}%s${RESET} rebased\n" "$1"; }
+fail() { printf "${RED}✗ %s${RESET}\n" "$*"; }
+hint() { printf "  fix conflicts, then: ${BOLD}%s --continue${RESET}\n" "$SCRIPT_NAME"; }
+info() { printf "${DIM}%-7s${RESET}  %s\n" "$1" "$2"; }
+
+usage() {
+	cat >&2 <<EOF
+Usage:
+  $SCRIPT_NAME [--prompt|-p] [--remote <remote>] <source-branch> <dest1> [dest2 ...]
+  $SCRIPT_NAME --continue | -c
+  $SCRIPT_NAME --abort
+
+Rebases each destination branch onto <source-branch>, one by one.
+On conflict, resolve manually then run '$SCRIPT_NAME --continue'.
+
+Options:
+  -p, --prompt          After rebasing, show git log and offer to push all dest branches.
+  --remote <remote>     Remote to push to (default: origin). Requires --prompt.
+EOF
+	exit 1
+}
+
+save_state() {
+	local dest
+	{
+		echo "ORIGINAL_BRANCH=$ORIGINAL_BRANCH"
+		echo "SOURCE_BRANCH=$SOURCE_BRANCH"
+		echo "CURRENT_INDEX=$CURRENT_INDEX"
+		echo "PROMPT_MODE=$PROMPT_MODE"
+		echo "REMOTE=$REMOTE"
+		for dest in "${DEST_BRANCHES[@]}"; do
+			echo "DEST=$dest"
+		done
+	} >"$STATE_FILE"
+}
+
+load_state() {
+	[[ -f "$STATE_FILE" ]] || {
+		echo "Error: no in-progress mrebase session found." >&2
+		exit 1
+	}
+	DEST_BRANCHES=()
+	while IFS='=' read -r key value; do
+		case "$key" in
+		ORIGINAL_BRANCH) ORIGINAL_BRANCH="$value" ;;
+		SOURCE_BRANCH) SOURCE_BRANCH="$value" ;;
+		CURRENT_INDEX) CURRENT_INDEX="$value" ;;
+		PROMPT_MODE) PROMPT_MODE="$value" ;;
+		REMOTE) REMOTE="$value" ;;
+		DEST) DEST_BRANCHES+=("$value") ;;
+		esac
+	done <"$STATE_FILE"
+}
+
+prompt_and_push() {
+	local dest total idx
+	echo "${DIM}────────────────────────────────────────────────────${RESET}"
+	git log --oneline --graph --decorate --all
+	echo "${DIM}────────────────────────────────────────────────────${RESET}"
+	echo ""
+	printf "Push all to ${BOLD}%s${RESET}? [y/N] " "$REMOTE"
+	read -r answer
+	if [[ "$answer" =~ ^[Yy]$ ]]; then
+		total="${#DEST_BRANCHES[@]}"
+		for ((idx = 0; idx < total; idx++)); do
+			dest="${DEST_BRANCHES[$idx]}"
+			step "$((idx + 1))" "$total" "$dest"
+			git push --force-with-lease "$REMOTE" "$dest"
+		done
+		printf "${GREEN}✓ all branches pushed${RESET}\n"
+	else
+		printf "${DIM}push skipped${RESET}\n"
+	fi
+}
+
+cleanup_and_return() {
+	git checkout "$ORIGINAL_BRANCH"
+	rm -f "$STATE_FILE"
+	printf "${GREEN}✓ all done${RESET} — back on ${BOLD}%s${RESET}\n" "$ORIGINAL_BRANCH"
+	[[ -n "$PROMPT_MODE" ]] && {
+		echo ""
+		prompt_and_push
+	}
+}
+
+process_from() {
+	local start_index="$1" dest
+	local total="${#DEST_BRANCHES[@]}"
+
+	for ((i = start_index; i < total; i++)); do
+		dest="${DEST_BRANCHES[$i]}"
+		CURRENT_INDEX=$i
+		save_state
+
+		step "$((i + 1))" "$total" "$dest"
+		git checkout "$dest"
+
+		if ! git rebase "$SOURCE_BRANCH"; then
+			echo ""
+			fail "conflict on $dest"
+			hint
+			exit 1
+		fi
+
+		ok "$dest"
+	done
+
+	cleanup_and_return
+}
+
+# ── Main ────────────────────────────────────────────────────────────────────
+
+[[ $# -eq 0 ]] && usage
+
+case "$1" in
+--continue | -c)
+	load_state
+	current_dest="${DEST_BRANCHES[$CURRENT_INDEX]}"
+	total="${#DEST_BRANCHES[@]}"
+
+	step "$((CURRENT_INDEX + 1))" "$total" "$current_dest — continuing"
+	git rebase --continue
+	ok "$current_dest"
+	echo ""
+
+	process_from $((CURRENT_INDEX + 1))
+	;;
+
+--abort)
+	load_state
+	fail "aborting rebase on ${DEST_BRANCHES[$CURRENT_INDEX]}"
+	git rebase --abort 2>/dev/null || true
+	git checkout "$ORIGINAL_BRANCH"
+	rm -f "$STATE_FILE"
+	printf "${DIM}back on %s${RESET}\n" "$ORIGINAL_BRANCH"
+	;;
+
+*)
+	[[ -f "$STATE_FILE" ]] && {
+		echo "Error: a mrebase session is already in progress." >&2
+		echo "Run '$SCRIPT_NAME --continue' to resume or '$SCRIPT_NAME --abort' to cancel." >&2
+		exit 1
+	}
+
+	PROMPT_MODE=""
+	REMOTE="origin"
+
+	# Parse optional flags before positional args
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		-p | --prompt)
+			PROMPT_MODE=1
+			shift
+			;;
+		--remote)
+			[[ -z "${2:-}" ]] && {
+				echo "Error: --remote requires a value." >&2
+				usage
+			}
+			REMOTE="$2"
+			shift 2
+			;;
+		-*)
+			echo "Error: unknown option '$1'." >&2
+			usage
+			;;
+		*) break ;;
+		esac
+	done
+
+	[[ $# -lt 2 ]] && usage
+
+	SOURCE_BRANCH="$1"
+	shift
+	DEST_BRANCHES=("$@")
+	ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+	CURRENT_INDEX=0
+
+	# Validate all branches upfront
+	for branch in "$SOURCE_BRANCH" "${DEST_BRANCHES[@]}"; do
+		git rev-parse --verify "refs/heads/$branch" &>/dev/null || {
+			echo "Error: branch '$branch' does not exist." >&2
+			exit 1
+		}
+	done
+
+	info "source" "${BOLD}$SOURCE_BRANCH${RESET}"
+	info "targets" "${DEST_BRANCHES[*]}"
+	[[ -n "$PROMPT_MODE" ]] && info "remote" "${BOLD}$REMOTE${RESET}"
+
+	process_from 0
+	;;
+esac

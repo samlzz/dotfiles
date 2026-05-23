@@ -1,0 +1,319 @@
+#!/usr/bin/env bash
+# cliphist-fuzzel — clipboard manager with encrypted vault (age + SSH key)
+#
+# Suggested Hyprland binds:
+#   bind = $MOD, V,       exec, cliphist-fuzzel
+#   bind = $MOD SHIFT, V, exec, cliphist-fuzzel --vault
+#
+# Suggested Hyprland window rules (add to hyprland.conf):
+#   windowrulev2 = float,        class:cliphist-picker
+#   windowrulev2 = size 80% 65%, class:cliphist-picker
+#   windowrulev2 = center,       class:cliphist-picker
+#
+# Picker key bindings:
+#   Enter   → copy / decrypt entry
+#   Ctrl+D  → delete entry
+#   Ctrl+S  → move to vault / restore from vault
+#
+# Initial setup: cliphist-fuzzel --setup
+# Override terminal: CLIPHIST_TERMINAL=foot cliphist-fuzzel
+
+VAULT_DIR="$HOME/.local/share/cliphist-vault"
+SSH_KEY="$HOME/.ssh/id_ed25519"
+NOTIFY_TIMEOUT=2000
+PICKER_APP_ID="term-float.cliphist-picker"
+PICKER_TERMINAL=""
+CLIPHIST_TERMINAL="alacritty"
+
+DEPENDENCIES=(cliphist fzf wl-copy age notify-send)
+
+function usage() {
+	cat <<EOM
+
+cliphist-fuzzel — clipboard manager with encrypted vault (age + SSH key)
+
+usage: cliphist-fuzzel [--setup | --vault | --help]
+
+options:
+    --setup    Initialize the vault (tests encryption/decryption with SSH key)
+    --vault    Open vault mode (shows encrypted + normal entries)
+    (none)     Open normal clipboard picker
+
+picker key bindings:
+    Enter     Copy / decrypt entry
+    Ctrl+D    Delete entry
+    Ctrl+S    Move to vault / restore from vault
+
+dependencies: ${DEPENDENCIES[*]}
+
+environment:
+    CLIPHIST_TERMINAL    Terminal emulator override (auto-detected if unset)
+                         Supported: foot, kitty, alacritty, wezterm, ghostty
+
+EOM
+	exit 1
+}
+
+function main() {
+	check_deps
+	detect_terminal
+
+	case "${1:-}" in
+	--setup) cmd_setup ;;
+	--vault) cmd_vault ;;
+	--help | -h) usage ;;
+	*) cmd_normal ;;
+	esac
+}
+
+function cmd_setup() {
+	[[ -f "$SSH_KEY" ]] || die "SSH key not found: $SSH_KEY"
+	[[ -f "$SSH_KEY.pub" ]] || die "SSH public key not found: $SSH_KEY.pub"
+
+	mkdir -p "$VAULT_DIR"
+	chmod 700 "$VAULT_DIR"
+
+	local test_plain="cliphist-vault-test"
+	local test_file="$VAULT_DIR/.setup-test.age"
+
+	echo "$test_plain" | age -R "$SSH_KEY.pub" -o "$test_file" ||
+		die "Encryption test failed with SSH key"
+
+	local decrypted
+	decrypted=$(age -d -i "$SSH_KEY" "$test_file" 2>/dev/null) ||
+		die "Decryption test failed — SSH key not recognized by age"
+
+	[[ "$decrypted" == "$test_plain" ]] ||
+		die "Decryption output mismatch"
+
+	rm -f "$test_file"
+	notify "security-high" "cliphist-fuzzel" "Vault initialized successfully\nKey: $SSH_KEY"
+}
+
+function cmd_normal() {
+	local list
+	list=$(cliphist list)
+
+	local filtered=""
+	while IFS= read -r line; do
+		local hash
+		hash=$(entry_hash "$line")
+		[[ -f "$VAULT_DIR/$hash.age" ]] && continue
+		filtered+="$line"$'\n'
+	done <<<"$list"
+
+	run_picker "$filtered"
+	[[ -z "$PICKER_ENTRY" ]] && exit 0
+
+	case "$PICKER_KEY" in
+	"")
+		cliphist decode <<<"$PICKER_ENTRY" | wl-copy
+		notify "edit-paste" "Clipboard" "Entry copied"
+		;;
+	ctrl-d)
+		cliphist delete <<<"$PICKER_ENTRY"
+		notify "edit-delete" "Clipboard" "Entry deleted"
+		;;
+	ctrl-s) mask_entry "$PICKER_ENTRY" ;;
+	esac
+}
+
+function cmd_vault() {
+	local vault_entries=""
+
+	for label_file in "$VAULT_DIR"/*.label; do
+		[[ -f "$label_file" ]] || continue
+		local hash
+		hash=$(basename "$label_file" .label)
+		local label
+		label=$(cat "$label_file")
+		vault_entries+="VAULT:$hash	 $label"$'\n'
+	done
+
+	local normal_entries
+	normal_entries=$(cliphist list)
+
+	run_picker "${vault_entries}${normal_entries}"
+	[[ -z "$PICKER_ENTRY" ]] && exit 0
+
+	if [[ "$PICKER_ENTRY" == VAULT:* ]]; then
+		local hash
+		hash=$(echo "$PICKER_ENTRY" | cut -d: -f2 | cut -f1)
+		case "$PICKER_KEY" in
+		"") unmask_entry "$hash" ;;
+		ctrl-d)
+			rm -f "$VAULT_DIR/$hash.age" "$VAULT_DIR/$hash.label"
+			notify "edit-delete" "Clipboard vault" "Entry permanently deleted"
+			;;
+		ctrl-s)
+			local content
+			content=$(age -d -i "$SSH_KEY" "$VAULT_DIR/$hash.age" 2>/dev/null) ||
+				die "Decryption failed"
+			echo -n "$content" | wl-copy
+			# wl-paste will re-add it to cliphist via the daemon
+			rm -f "$VAULT_DIR/$hash.age" "$VAULT_DIR/$hash.label"
+			notify "security-low" "Clipboard vault" "Entry unmasked and restored"
+			;;
+		esac
+	else
+		case "$PICKER_KEY" in
+		"")
+			cliphist decode <<<"$PICKER_ENTRY" | wl-copy
+			notify "edit-paste" "Clipboard" "Entry copied"
+			;;
+		ctrl-d)
+			cliphist delete <<<"$PICKER_ENTRY"
+			notify "edit-delete" "Clipboard" "Entry deleted"
+			;;
+		ctrl-s) mask_entry "$PICKER_ENTRY" ;;
+		esac
+	fi
+}
+
+PICKER_KEY=""
+PICKER_ENTRY=""
+
+function run_picker() {
+	local entries="$1"
+	PICKER_KEY=""
+	PICKER_ENTRY=""
+
+	local tmpdir
+	tmpdir=$(mktemp -d)
+
+	printf '%s' "$entries" >"$tmpdir/input"
+
+	# Preview script: decode normal entries, show label for vault entries.
+	# VAULT_DIR is embedded at generation time.
+	cat >"$tmpdir/preview.sh" <<PREVIEW_EOF
+#!/usr/bin/env bash
+entry="\$1"
+if [[ "\$entry" == VAULT:* ]]; then
+    hash=\$(echo "\$entry" | cut -d: -f2 | cut -f1)
+    printf '\033[33m[Encrypted vault entry]\033[0m\n\n'
+    label_file="${VAULT_DIR}/\$hash.label"
+    [[ -f "\$label_file" ]] && cat "\$label_file"
+else
+    echo "\$entry" | cliphist decode 2>/dev/null \
+        || printf '\033[31m[Binary content — cannot preview]\033[0m\n'
+fi
+PREVIEW_EOF
+	chmod +x "$tmpdir/preview.sh"
+
+	cat >"$tmpdir/picker.sh" <<PICKER_EOF
+#!/usr/bin/env bash
+fzf \\
+    --delimiter='\t' \\
+    --with-nth=2.. \\
+    --preview='$tmpdir/preview.sh {}' \\
+    --preview-window='right:60%:wrap' \\
+    --expect='ctrl-d,ctrl-s' \\
+    --border=rounded \\
+    --layout=reverse \\
+    --prompt='  Clipboard  ' \\
+    --pointer='▶' \\
+    --header='Enter: copy  Ctrl+D: delete  Ctrl+S: vault' \\
+    < '$tmpdir/input' > '$tmpdir/output'
+PICKER_EOF
+	chmod +x "$tmpdir/picker.sh"
+
+	launch_terminal "$tmpdir/picker.sh"
+
+	if [[ -f "$tmpdir/output" ]]; then
+		PICKER_KEY=$(head -1 "$tmpdir/output")
+		PICKER_ENTRY=$(sed -n '2p' "$tmpdir/output")
+	fi
+
+	rm -rf "$tmpdir"
+}
+
+function launch_terminal() {
+	local script="$1"
+	case "$PICKER_TERMINAL" in
+	foot) foot --app-id="$PICKER_APP_ID" -e bash "$script" ;;
+	kitty) kitty --class="$PICKER_APP_ID" bash "$script" ;;
+	alacritty) alacritty --class "$PICKER_APP_ID" -e bash "$script" ;;
+	wezterm) wezterm start --class "$PICKER_APP_ID" -- bash "$script" ;;
+	ghostty) ghostty --class="$PICKER_APP_ID" -e bash "$script" ;;
+	xterm) xterm -class "$PICKER_APP_ID" -e bash "$script" ;;
+	*) die "Unsupported terminal: $PICKER_TERMINAL" ;;
+	esac
+}
+
+function detect_terminal() {
+	if [[ -n "${CLIPHIST_TERMINAL:-}" ]]; then
+		PICKER_TERMINAL="$CLIPHIST_TERMINAL"
+		return
+	fi
+	local candidates=(foot kitty alacritty wezterm ghostty xterm)
+	for t in "${candidates[@]}"; do
+		if command -v "$t" &>/dev/null; then
+			PICKER_TERMINAL="$t"
+			return
+		fi
+	done
+	die "No supported terminal found (tried: ${candidates[*]})"
+}
+
+function mask_entry() {
+	local entry="$1"
+
+	local content
+	content=$(cliphist decode <<<"$entry") || die "Failed to decode entry"
+
+	local hash
+	hash=$(entry_hash "$entry")
+	local vault_file="$VAULT_DIR/$hash.age"
+
+	echo "$content" | age -R "$SSH_KEY.pub" -o "$vault_file" ||
+		die "Encryption failed"
+
+	local label
+	label=$(echo "$entry" | cut -f2- | head -c 60)
+	echo "$label" >"$VAULT_DIR/$hash.label"
+
+	cliphist delete <<<"$entry"
+	notify "security-high" "Clipboard vault" "Entry hidden and encrypted"
+}
+
+function unmask_entry() {
+	local hash="$1"
+	local vault_file="$VAULT_DIR/$hash.age"
+
+	[[ -f "$vault_file" ]] || die "Vault file not found: $hash"
+
+	local content
+	content=$(age -d -i "$SSH_KEY" "$vault_file" 2>/dev/null) ||
+		die "Decryption failed — wrong SSH key?"
+
+	echo -n "$content" | wl-copy
+	notify "edit-paste" "Clipboard vault" "Entry decrypted and copied"
+}
+
+function entry_hash() {
+	echo -n "$1" | sha256sum | cut -c1-16
+}
+
+function check_deps() {
+	local missing=()
+	for cmd in "${DEPENDENCIES[@]}"; do
+		command -v "$cmd" &>/dev/null || missing+=("$cmd")
+	done
+	[[ ${#missing[@]} -gt 0 ]] && die "Missing dependencies: ${missing[*]}"
+	mkdir -p "$VAULT_DIR"
+}
+
+function notify() {
+	local icon="$1" title="$2" msg="$3"
+	notify-send -t "$NOTIFY_TIMEOUT" -i "$icon" "$title" "$msg"
+}
+
+function die() {
+	notify-send -t "$NOTIFY_TIMEOUT" -i "dialog-error" "cliphist-fuzzel" "$1"
+	exit 1
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+	main "$@"
+	exit 0
+fi

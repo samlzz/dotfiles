@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# === File: git-attach-remote ===
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# === GLOBAL CONFIGURATION ===
+GH_USERNAME="samlzz"
+REMOTE_NAME="origin"
+GH_REPO_VISIBILITY="--public"
+
+# === FUNCTIONS ===
+
+print_error() {
+  printf "❌ %s\n" "$1" >&2
+}
+
+print_info() {
+  printf "  %s\n" "$1"
+}
+
+print_success() {
+  printf " %s\n" "$1"
+}
+
+get_target_dir() {
+  local dir
+  dir="${1:-$(pwd)}"
+  if [[ ! -d "$dir" ]]; then
+    print_error "Directory not found: $dir"
+    return 1
+  fi
+  printf "%s\n" "$dir"
+}
+
+validate_git_repo() {
+  if [[ ! -d ".git" ]]; then
+    print_error "This is not a Git repository."
+    return 1
+  fi
+}
+
+check_existing_remote() {
+  if git remote get-url "$REMOTE_NAME" &>/dev/null; then
+    print_error "Remote '$REMOTE_NAME' already exists."
+    return 1
+  fi
+}
+
+get_repo_name() {
+  local path="$1"
+  local name
+  name=$(basename "$path")
+  if [[ -z "$name" ]]; then
+    print_error "Unable to determine repository name from path."
+    return 1
+  fi
+  printf "%s\n" "$name"
+}
+
+repo_exists_on_github() {
+  local repo="$1"
+  gh repo view "$GH_USERNAME/$repo" &>/dev/null
+}
+
+create_github_repo() {
+  local repo="$1"
+  print_info "Creating GitHub repository '$repo'..."
+  if ! gh repo create "$GH_USERNAME/$repo" "$GH_REPO_VISIBILITY" --confirm; then
+    print_error "Failed to create GitHub repository '$repo'."
+    return 1
+  fi
+}
+
+prompt_for_repo_creation() {
+  local repo="$1"
+  local answer
+  printf "❓ GitHub repository '%s' does not exist.\n" "$repo"
+  read -r -p "Create it now? (y/n): " answer
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    create_github_repo "$repo" || return 1
+    printf "%s\n" "$repo"
+    return 0
+  fi
+
+  local new_repo
+  read -r -p "Enter a repository name: " new_repo
+  if [[ -z "$new_repo" ]]; then
+    print_error "No repository name entered."
+    return 1
+  fi
+
+  if ! repo_exists_on_github "$new_repo"; then
+    create_github_repo "$new_repo" || return 1
+  fi
+
+  printf "%s\n" "$new_repo"
+}
+
+get_ssh_url() {
+  local repo="$1"
+  local ssh_url
+  if ! ssh_url=$(gh repo view "$GH_USERNAME/$repo" --json sshUrl -q .sshUrl); then
+    print_error "Failed to retrieve SSH URL for '$repo'."
+    return 1
+  fi
+  if [[ -z "$ssh_url" ]]; then
+    print_error "SSH URL for '$repo' is empty."
+    return 1
+  fi
+  printf "%s\n" "$ssh_url"
+}
+
+add_remote() {
+  local name="$1"
+  local url="$2"
+  if ! git remote add "$name" "$url"; then
+    print_error "Failed to add remote '$name'."
+    return 1
+  fi
+  print_success "Remote '$name' added: $url"
+}
+
+main() {
+  local target_dir repo_name ssh_url
+
+  if ! target_dir=$(get_target_dir "${1:-}"); then return 1; fi
+  cd "$target_dir" || return 1
+
+  if ! validate_git_repo; then return 1; fi
+  if ! check_existing_remote; then return 1; fi
+
+  if ! repo_name=$(get_repo_name "$target_dir"); then return 1; fi
+
+  if ! repo_exists_on_github "$repo_name"; then
+    if ! repo_name=$(prompt_for_repo_creation "$repo_name"); then return 1; fi
+  else
+    print_info "GitHub repository '$repo_name' already exists."
+  fi
+
+  if ! ssh_url=$(get_ssh_url "$repo_name"); then return 1; fi
+  add_remote "$REMOTE_NAME" "$ssh_url"
+}
+
+main "$@"

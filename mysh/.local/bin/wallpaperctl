@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+LOG="/tmp/wallpaperctl.log"
+
+if [[ -z "$WALL_DIR" ]]; then
+	export WALL_DIR="$HOME/Pictures/wallpapers"
+fi
+
+printf "\n##########: $(date --iso-8601=seconds)\n" > "$LOG"
+
+set_wallpaper() {
+	local image="$1"
+
+	if [[ "$image" == "default" ]]; then
+		image="$WALL_DIR/evening-sky.png"
+	fi
+
+	if [[ ! -f "$image" ]]; then
+		echo "Error: image file not found"
+		return 1
+	fi
+
+	echo "$image" >"$HOME/.cache/current_wallpaper"
+
+	pkill hyprpaper
+	hyprpaper &
+	sleep 0.3
+	local monitor
+	monitor=$(hyprctl monitors -j | jq -r '.[0].name')
+	hyprctl hyprpaper preload "$image" &
+	hyprctl hyprpaper wallpaper "$monitor,$image"
+	BG_FILE_NAME=$(basename "$image")
+}
+
+rd_wallpaper() {
+	set_wallpaper $(find "$WALL_DIR" -type f | shuf -n 1)
+}
+
+main() {
+	if [[ "$1" == "set" ]]; then
+		set_wallpaper "$2"
+	else
+		rd_wallpaper
+	fi
+}
+
+main "$@" &>"$LOG"
+if [[ -z "$BG_FILE_NAME" ]]; then
+	printf "An error occured\n" >2
+	exit 1
+fi
+printf "New wallpaper '%s' was correctly set\n" "$BG_FILE_NAME"
+

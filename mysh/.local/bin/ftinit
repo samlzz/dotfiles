@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# === File: ftinit ===
+
+set -euo pipefail
+IFS=$'\n\t'
+
+TEMPLATE_DIR="$XDG_DATA_HOME/ctools"
+MAKEFILE_NAME_VAR_PATTERN='^NAME[[:space:]]*='
+REMOTE_URL=""
+
+init_template_dir() {
+	if [[ ! -d "$TEMPLATE_DIR" ]]; then
+		printf "'ctools' folder not found in XDG_DATA_HOME, please check requirements\n"
+	fi
+}
+
+sanitize_dirname() {
+	local path="$1"
+	local dir
+	dir=$(basename "$path")
+	dir=${dir//[^a-zA-Z0-9_-]/_}
+	printf "%s" "$dir"
+}
+
+copy_makefile_with_name() {
+	local target_dir="$1"
+	local makefile_src="$TEMPLATE_DIR/Makefile.template"
+	local makefile_dst="$target_dir/Makefile"
+	local src_name
+	src_name=$(sanitize_dirname "$target_dir")
+
+	if ! cp "$makefile_src" "$makefile_dst"; then
+		printf "Error: Failed to copy Makefile\n" >&2
+		return 1
+	fi
+
+	if ! sed -i.bak -E "s|$MAKEFILE_NAME_VAR_PATTERN.*|NAME      = $src_name|" "$makefile_dst"; then
+		printf "Error: Failed to modify Makefile NAME\n" >&2
+		return 1
+	fi
+
+	rm -f "$makefile_dst.bak"
+}
+
+copy_gitignore() {
+	local target_dir="$1"
+	if ! cp "$TEMPLATE_DIR/.gitignore" "$target_dir/.gitignore"; then
+		printf "Error: Failed to copy .gitignore\n" >&2
+		return 1
+	fi
+}
+
+copy_clang_format() {
+	local target_dir="$1"
+	if ! cp "$TEMPLATE_DIR/.clang-format" "$target_dir/.clang-format"; then
+		printf "Error: Failed to copy .clang-format\n" >&2
+		return 1
+	fi
+}
+
+init_git_repo() {
+	local target_dir="$1"
+	if ! git -C "$target_dir" init; then
+		printf "Error: Failed to initialize git repository\n" >&2
+		return 1
+	fi
+}
+
+prompt_remote_name() {
+	local name
+
+	while true; do
+		printf "Enter remote name (e.g., origin): "
+		if ! IFS= read -r name; then
+			printf "Error: Failed to read input\n" >&2
+			return 1
+		fi
+		name=${name//[^a-zA-Z0-9_-]/}
+		if [[ -n "$name" ]]; then
+			break
+		fi
+		printf "Invalid remote name. Please try again.\n" >&2
+	done
+
+	add_git_remote "$1" "$name"
+}
+
+add_git_remote() {
+	local target_dir="$1"
+	local remote_name="$2"
+
+	if ! git -C "$target_dir" remote add "$remote_name" "$REMOTE_URL"; then
+		printf "Error: Failed to add remote '%s'\n" "$remote_name" >&2
+		return 1
+	fi
+
+	printf "Remote '%s' added with URL '%s'\n" "$remote_name" "$REMOTE_URL"
+}
+
+create_src_dir() {
+	local target_dir="$1"
+	mkdir -p "$target_dir/src"
+}
+
+parse_arguments() {
+	local arg
+	while [[ $# -gt 0 ]]; do
+		arg="$1"
+		case "$arg" in
+		-r | --repo)
+			shift
+			if [[ $# -gt 0 && "$1" != -* ]]; then
+				REMOTE_URL="$1"
+				shift
+			fi
+			;;
+		-f | --format)
+			OPT_FORMAT=1
+			shift
+			;;
+		*)
+			printf "Usage: ftinit [-r [remote_url]] [-f|--format]\n" >&2
+			return 1
+			;;
+		esac
+	done
+}
+
+main() {
+	local curr_dir
+	curr_dir=$(pwd)
+	OPT_FORMAT=0
+
+	if ! parse_arguments "$@"; then
+		return 1
+	fi
+
+	if ! init_template_dir; then
+		return 1
+	fi
+	if ! copy_makefile_with_name "$curr_dir"; then
+		return 1
+	fi
+
+	create_src_dir "$curr_dir"
+
+	if [[ -n "${REMOTE_URL// /}" ]]; then
+		if ! copy_gitignore "$curr_dir"; then
+			return 1
+		fi
+		if ! init_git_repo "$curr_dir"; then
+			return 1
+		fi
+		if ! prompt_remote_name "$curr_dir"; then
+			return 1
+		fi
+	fi
+
+	if [[ "$OPT_FORMAT" -eq 1 ]]; then
+		if ! copy_clang_format "$curr_dir"; then
+			return 1
+		fi
+	fi
+}
+
+main "$@"

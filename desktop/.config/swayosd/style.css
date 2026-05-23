@@ -1,0 +1,37 @@
+window {
+  background-color: rgba(30, 30, 46, 0.9); 
+  border-radius: 38px;
+  border: 2px solid #b4befe;
+  padding: 12px;
+  color: #cdd6f4;  /* @text */
+  font-size: 14pt;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  padding: 3px 10px;
+}
+
+label {
+  color: #cdd6f4;  /* @text */
+}
+
+progressbar {
+  background-color: #313244; /* @surface0 */
+  border-radius: 8px;
+}
+
+progressbar trough {
+  background-color: #45475a; /* @surface1 */
+  border-radius: 8px;
+  min-height: 10px;
+}
+
+progressbar progress {
+  background-color: #cba6f7; /* @pink */
+  border-radius: 8px;
+}
+
+.notification {
+  background-color: rgba(49, 50, 68, 0.95); /* @surface0 */
+  color: #cdd6f4;
+  border-radius: 8px;
+}
+

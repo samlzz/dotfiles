@@ -1,0 +1,16 @@
+# SSH - jamais les clés privées
+ssh/.ssh/id_*
+ssh/.ssh/42auth*
+ssh/.ssh/known_hosts*
+
+# Tmux - plugins gérés par TPM au runtime
+terminal/.config/tmux/plugins/
+
+# Credentials et données sensibles
+git/.config/gh/config.yml
+git/.config/gh/hosts.yml
+rclone/.config/rclone/rclone.conf
+
+# Runtime / cache
+*.log
+*.cache

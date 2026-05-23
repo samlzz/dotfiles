@@ -1,0 +1,34 @@
+/* HyprWave - Lucid Dreaming Theme - Vibrant retro */
+:root {
+    --bg-primary: rgba(15, 10, 25, 0.75); --bg-secondary: rgba(20, 15, 30, 0.75);
+    --bg-album-cover: rgba(25, 20, 35, 0.85); --bg-album-secondary: rgba(30, 25, 40, 0.85);
+    --btn-default: rgba(150, 80, 180, 0.85); --btn-default-secondary: rgba(140, 70, 170, 0.85);
+    --btn-default-hover: rgba(170, 100, 200, 0.92); --btn-default-hover-secondary: rgba(160, 90, 190, 0.92);
+    --btn-play: rgba(255, 80, 200, 0.95); --btn-play-secondary: rgba(245, 70, 190, 0.95);
+    --btn-play-hover: rgba(255, 100, 220, 0.98); --btn-play-hover-secondary: rgba(255, 90, 210, 0.98);
+    --btn-play-active: rgba(235, 60, 180, 0.95); --btn-play-active-secondary: rgba(225, 50, 170, 0.95);
+    --btn-expand: rgba(80, 200, 255, 0.95); --btn-expand-secondary: rgba(70, 190, 245, 0.95);
+    --btn-expand-hover: rgba(100, 220, 255, 0.98); --btn-expand-hover-secondary: rgba(90, 210, 255, 0.98);
+    --btn-expand-active: rgba(60, 180, 235, 0.95); --btn-expand-active-secondary: rgba(50, 170, 225, 0.95);
+    --progress-bg: rgba(40, 30, 50, 0.25); --progress-fill-start: rgba(255, 80, 200, 0.95); --progress-fill-end: rgba(80, 200, 255, 0.95);
+    --handle-color: rgba(255, 80, 200, 0.98); --handle-hover: rgba(255, 100, 220, 1.0);
+    --handle-border: rgba(235, 60, 180, 0.5); --handle-shadow: rgba(255, 80, 200, 0.7);
+    --text-primary: rgba(255, 220, 250, 0.95); --text-secondary: rgba(230, 200, 240, 0.85);
+    --text-tertiary: rgba(200, 180, 220, 0.75); --text-muted: rgba(160, 150, 190, 0.65);
+    --border-primary: rgba(80, 60, 100, 0.35); --border-button: rgba(100, 75, 120, 0.3);
+    --border-button-hover: rgba(120, 90, 140, 0.45); --border-play: rgba(255, 80, 200, 0.4);
+    --border-play-hover: rgba(255, 100, 220, 0.55); --border-expand: rgba(80, 200, 255, 0.4);
+    --border-expand-hover: rgba(100, 220, 255, 0.55); --shadow-default: rgba(0, 0, 0, 0.6);
+    --shadow-button: rgba(0, 0, 0, 0.5); --shadow-play: rgba(255, 80, 200, 0.6);
+    --shadow-play-hover: rgba(255, 100, 220, 0.8); --shadow-expand: rgba(80, 200, 255, 0.5);
+    --shadow-expand-hover: rgba(100, 220, 255, 0.7); --shadow-focus: rgba(255, 80, 200, 0.8);
+    --border-radius-container: 100px; --border-radius-section: 20px; --border-radius-album: 16px;
+    --border-radius-button: 50%; --border-radius-progress: 2px; --padding-container: 12px; --padding-section: 16px;
+}
+.visualizer-bar {
+    background: linear-gradient(180deg, rgba(255, 100, 220, 0.98), rgba(180, 100, 255, 0.98), rgba(100, 220, 255, 0.98));
+    border-radius: 0px; transition: all 0.05s ease-out; margin: 0px; min-width: 1px; min-height: 3px;
+    box-shadow: 0 0 16px rgba(255, 80, 200, 0.8), 0 0 10px rgba(80, 200, 255, 0.6);
+}
+.vertical-display-label { font-family: 'VT323', monospace; font-size: 28px; font-weight: bold;
+    color: rgba(255, 100, 220, 0.98); letter-spacing: 0px; line-height: 1.2; }

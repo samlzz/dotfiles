@@ -1,0 +1,353 @@
+@import url("../colors/mocha.css");
+
+/* ─── Variables ─────────────────────────────────────────────────────────── */
+.widget-mpris-album-art {
+    --mpris-album-art-icon-size: 100px;
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+* {
+    all: unset;
+    outline: none;
+    font-family: "MesloLGSDZ Nerd Font";
+    font-size: 18px;
+    text-shadow: none;
+    color: @foreground;
+    background-color: transparent;
+    background: transparent;
+    border-radius: 8px;
+}
+
+/* ─── Control Center ─────────────────────────────────────────────────────── */
+.control-center {
+    background-color: alpha(@background, 0.85);
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.65);
+    padding: 5px;
+}
+
+/* ─── Notifications (dans le centre) ─────────────────────────────────────── */
+
+/* Fond de chaque notification — fond solide pour éviter les transparences
+   qui s'accumulent quand les notifs s'empilent */
+.control-center .notification-row .notification-background {
+    background-color: @base;
+    border-radius: 12px;
+    margin-top: 5px;
+}
+
+.notification {
+    padding: 7px;
+    border-radius: 12px;
+}
+
+.notification.critical {
+    background-color: alpha(@flamingo, 0.5);
+    box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.65);
+}
+
+/* Fond solide plutôt que alpha() qui s'additionne avec le fond du
+   .notification-background et donne l'effet de chevauchement */
+.notification.low,
+.notification.normal {
+    background-color: @base;
+    box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.65);
+}
+
+.notification-content {
+    padding: 8px 10px;
+}
+
+.notification-content .text-box {
+    margin: 4px 0 4px 8px;
+}
+
+.summary { font-size: 1.1rem; }
+.time    { font-size: 0.8rem; color: @subtext0; }
+.body    { font-size: 1rem; }
+.image   { padding-right: 0.8rem; }
+
+.notification > *:last-child > * {
+    min-height: 1em;
+    margin: 5px;
+}
+
+/* Boutons d'action */
+.notification-action {
+    border-radius: 7px;
+    background-color: @surface1;
+    box-shadow: inset 0 0 0 1px @surface2;
+    margin: 6px;
+}
+
+.notification-action > label {
+    font-size: 1rem;
+    font-weight: normal;
+    padding: 4px 8px;
+}
+
+.notification-action:hover {
+    background-color: @surface2;
+}
+
+.notification-action:active {
+    background-color: @sapphire;
+    color: @base;
+}
+
+/* Barres de progression */
+.notification.critical progress { background-color: @red; }
+.notification.low progress,
+.notification.normal progress   { background-color: @blue; }
+
+/* Bouton fermer */
+.close-button {
+    background-color: @red;
+    color: @base;
+    border-radius: 6px;
+    margin: 7px;
+    padding: 2px 4px;
+    box-shadow: 0 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.close-button:hover  { background-color: @maroon; color: @base; }
+.close-button:active { background-color: @red;    color: @base; }
+
+/* Groupes de notifications */
+.notification-group-header,
+.notification-group-icon {
+    font-size: 0.9rem;
+}
+
+.notification-group-collapse-button,
+.notification-group-close-all-button {
+    background-color: @overlay0;
+    box-shadow: 0 0 3px 0 rgba(0, 0, 0, 0.35);
+    min-width: 28px;
+    min-height: 28px;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+}
+
+/* Marge entre l'en-tête du groupe et ses notifications */
+.notification-group .notification-row {
+    margin-top: 4px;
+}
+.notification-group .notification-row:first-child {
+    margin-top: 10px;
+}
+
+.notification-group-collapse-button:hover  { background-color: alpha(@blue, 0.8); }
+.notification-group-close-all-button:hover { background-color: alpha(@red, 0.8); }
+
+/* ─── Floating Notifications (popups) ────────────────────────────────────── */
+.floating-notifications.background .notification-row .notification-background {
+    background-color: @base;
+    border-radius: 12px;
+    margin: 18px;
+    padding: 0;
+    box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.8), inset 0 0 0 1px @surface0;
+    color: @text;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification {
+    padding: 7px;
+    border-radius: 12px;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification.critical {
+    box-shadow: inset 0 0 7px 0 @red;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification .notification-content {
+    margin: 7px;
+    color: @text;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification .notification-content .time {
+    color: @subtext0;
+}
+
+.floating-notifications.background .notification-row .notification-background .close-button {
+    margin: 7px;
+    padding: 2px;
+    border-radius: 6px;
+    background-color: @red;
+    color: @base;
+}
+
+.floating-notifications.background .notification-row .notification-background .close-button:hover  { background-color: @maroon; }
+.floating-notifications.background .notification-row .notification-background .close-button:active { background-color: @red; }
+
+/* ─── GTK elements ───────────────────────────────────────────────────────── */
+trough highlight {
+    background: @lavender;
+    border-radius: 8px;
+}
+
+scale trough {
+    margin: 0 1rem;
+    background-color: @overlay0;
+    min-height: 8px;
+    min-width: 70px;
+    border-radius: 4px;
+}
+
+slider {
+    background-color: @foreground;
+    border-radius: 4px;
+}
+
+tooltip {
+    background-color: @overlay0;
+}
+
+/* ─── Widgets ────────────────────────────────────────────────────────────── */
+
+/* Buttons grid */
+.widget-buttons-grid {
+    font-size: 1rem;
+    padding: 20px 12px 10px;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button {
+    background: @overlay0;
+    box-shadow: 0px 0px 10px alpha(@background, 0.8);
+    border-radius: 12px;
+    min-width: 0;
+    min-height: 30px;
+    padding: 6px;
+    margin: 0 3px 0;
+    transition: all .5s ease;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button:hover {
+    background: alpha(@mauve, 0.8);
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button.toggle:checked {
+    background: @blue;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button.toggle:checked:hover {
+    background: alpha(@blue, 0.8);
+}
+
+/* MPRIS — fond solide pour éviter le chevauchement avec le fond du control-center */
+.widget-mpris .widget-mpris-player {
+    background-color: @mantle;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.65);
+    padding: 16px;
+    margin: 16px 20px;
+}
+
+.widget-mpris .widget-mpris-player .widget-mpris-album-art {
+    border-radius: 10px;
+    min-width: var(--mpris-album-art-icon-size);
+    min-height: var(--mpris-album-art-icon-size);
+    /* Bordure visible pour distinguer la pochette du fond */
+    box-shadow: 0 0 0 2px @surface2, 0 4px 12px rgba(0, 0, 0, 0.9);
+}
+
+.widget-mpris .widget-mpris-player .widget-mpris-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: @text;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+    margin: 0 8px 4px;
+}
+
+.widget-mpris .widget-mpris-player .widget-mpris-subtitle {
+    font-size: 1rem;
+    color: @subtext1;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* Boutons de contrôle (play/pause/next/prev) — dans le lecteur */
+.widget-mpris .widget-mpris-player button {
+    border-radius: 6px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 10px;
+}
+
+/* Boutons de changement de lecteur — en dehors du player, plus étroits */
+.widget-mpris button {
+    border-radius: 6px;
+    min-width: 18px;
+    min-height: 36px;
+    padding: 4px 2px;
+}
+
+.widget-mpris button:hover {
+    background: alpha(@mauve, 0.6);
+}
+
+/* Volume */
+.widget-volume {
+    padding: 6px 5px 5px;
+    font-size: 1.3rem;
+}
+
+.widget-volume > box > button {
+    border: none;
+}
+
+.per-app-volume {
+    padding: 4px 8px 8px;
+    margin: 0 8px 8px;
+}
+
+/* Backlight */
+.widget-backlight {
+    padding: 0 0 3px 16px;
+    font-size: 1.1rem;
+}
+
+/* DND */
+.widget-dnd {
+    font-weight: bold;
+    padding: 20px 15px 15px;
+}
+
+.widget-dnd > switch {
+    font-size: initial;
+    border-radius: 100px;
+    background: @yellow;
+    border: none;
+    box-shadow: none;
+    padding: 3px;
+}
+
+.widget-dnd > switch:checked {
+    background: @green;
+}
+
+.widget-dnd > switch slider {
+    background: @background;
+    border-radius: 12px;
+    min-width: 18px;
+    min-height: 18px;
+}
+
+/* Title */
+.widget-title {
+    font-weight: bold;
+    padding: 15px;
+}
+
+.widget-title > label {
+    font-size: 1.5rem;
+}
+
+.widget-title > button {
+    background: #e64553;
+    border-radius: 100px;
+    padding: 0 6px;
+    transition: all 0.7s ease;
+}
+
+.widget-title > button:hover {
+    background: alpha(@red, 0.8);
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.65);
+}

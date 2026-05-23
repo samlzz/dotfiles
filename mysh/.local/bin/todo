@@ -1,0 +1,575 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+##########################
+# ======= Globals ====== #
+##########################
+
+COLOR_FLAG="auto"
+CLEAR_EXIT_FLAG=0
+
+ESC=$'\033'
+RESET="${ESC}[0m"
+BD="1"
+IT="3"
+UD="4"
+CYAN="36"
+YELLOW="33"
+BLUE="34"
+BLACK="30"
+
+##########################
+# ======== Utils ======= #
+##########################
+
+find_first_todo_file() {
+  local file
+  file=$(find . -maxdepth 1 -type f -name "*.todo" -print -quit)
+  if [[ -z "${file// /}" ]]; then
+    printf "Error: No .todo file found in current directory.\n" >&2
+    return 1
+  fi
+  printf "%s\n" "$file"
+}
+
+find_todo_file() {
+  local wanted_raw
+  wanted_raw=${1:-}
+
+  if [[ "$wanted_raw" == "null" ]]; then
+    find_first_todo_file
+    return 0
+  fi
+  local wanted
+  wanted=$(sanitize_name "$wanted_raw")
+  if [[ -n "${wanted// /}" ]]; then
+    if [[ ! -f "$wanted" ]]; then
+      printf "Error: Specified todo file '%s' not found in current directory.\n" "$wanted" >&2
+      return 1
+    fi
+    printf "%s\n" "$wanted"
+    return
+  fi
+  find_first_todo_file
+}
+
+trim() {
+  local s="${1:-}"
+  s=$(printf "%s" "$s" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+  printf "%s" "$s"
+}
+
+sanitize_name() {
+  local raw
+  raw=$1
+  local name
+  name=$(trim "$raw")
+  if [[ -z "$name" ]]; then
+    printf "" && return 0
+  fi
+  name=$(printf "%s" "$name" | sed 's/[[:space:]]\+/_/g; s/[^A-Za-z0-9_.-]//g')
+  if [[ "$name" != *.todo ]]; then
+    name="${name}.todo"
+  fi
+  printf "%s" "$name"
+}
+
+#############################
+# ======== Commands ======= #
+#############################
+
+#####################
+## create command  ##
+#####################
+
+create_todo_file() {
+  local raw
+  raw=${1:-}
+  local filename
+  filename=$(sanitize_name "$raw")
+  if [[ -z "${filename// /}" ]]; then
+    filename=".todo"
+  fi
+
+  if [[ -f "$filename" ]]; then
+    printf "Error: File '%s' already exists.\n" "$filename" >&2
+    return 1
+  fi
+
+  if ! touch "$filename"; then
+    printf "Error: Unable to create file '%s'.\n" "$filename" >&2
+    return 1
+  fi
+
+  printf "Created new todo file: %s\n" "$filename"
+}
+
+######################
+## display command  ##
+######################
+
+display_todo_file() {
+  local todo_file="$1"
+
+  printf "# $(basename "$todo_file") todo list:\n\n"
+  if ! cat -- "$todo_file"; then
+    printf "Error: Unable to read content from '%s'.\n" "$todo_file" >&2
+    return 1
+  fi
+}
+
+###################
+## show command  ##
+###################
+
+colored_todo_show_file() {
+  sed \
+    -e 's/^\([[:space:]]*\)\[ \]/\1\o033[1;37m☐\o033[0m/' \
+    -e 's/^\([[:space:]]*\)\[x\]/\1\o033[1;32m☑\o033[0m/' \
+    "$1"
+}
+
+todo_show_file() {
+  sed \
+    -e 's/^\([[:space:]]*\)\[ \]/\1☐/' \
+    -e 's/^\([[:space:]]*\)\[x\]/\1☑/' \
+    "$1"
+}
+
+show_todo_file() {
+  local todo_file="$1"
+
+  case "$COLOR_FLAG" in
+  always)
+    if ! colored_todo_show_file "$todo_file"; then
+      printf "Error: Unable to show content from '%s'.\n" "$todo_file" >&2
+      return 1
+    fi
+    ;;
+  never)
+    if ! todo_show_file "$todo_file"; then
+      printf "Error: Unable to show content from '%s'.\n" "$todo_file" >&2
+      return 1
+    fi
+    ;;
+  auto)
+    if [[ -t 1 ]]; then
+      if ! colored_todo_show_file "$todo_file"; then
+        printf "Error: Unable to show content from '%s'.\n" "$todo_file" >&2
+        return 1
+      fi
+    else
+      if ! todo_show_file "$todo_file"; then
+        printf "Error: Unable to show content from '%s'.\n" "$todo_file" >&2
+        return 1
+      fi
+    fi
+    ;;
+  esac
+}
+
+###################
+## list command  ##
+###################
+
+list_todo_files() {
+  local files
+  if ! files=$(find . -maxdepth 1 -type f -name "*.todo" 2>/dev/null); then
+    printf "Error: Failed to search for .todo files.\n" >&2
+    return 1
+  fi
+
+  if [[ -z "$files" ]]; then
+    printf "No .todo files found in current directory.\n"
+    return 0
+  fi
+
+  printf "Found .todo files:\n"
+  while IFS= read -r file; do
+    printf " - %s\n" "${file#./}"
+  done <<<"$files"
+}
+
+##################
+## add command  ##
+##################
+
+parse_add_args() {
+  local arg_name="null"
+  local done_flag=0
+  local multiple=0
+  local subitem="null"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+    -d | --done)
+      done_flag=1
+      ;;
+    -m | --multiple)
+      [[ "$subitem" != "null" ]] && {
+        printf "Error: -m conflicts\n" >&2
+        return 1
+      }
+      multiple=1
+      ;;
+    -si | --subitems)
+      ((multiple == 1)) && {
+        printf "Error: -si with -m\n" >&2
+        return 1
+      }
+      shift || true
+      subitem="${1:-}"
+      [[ -z "$subitem" ]] && {
+        printf "Error: --subitems requires name\n" >&2
+        return 1
+      }
+      ;;
+    -*)
+      printf "Error: Unknown option '%s'\n" "$1" >&2
+      return 1
+      ;;
+    *)
+      arg_name="$1"
+      ;;
+    esac
+    shift || true
+  done
+  printf "%q %q %q %q\n" "$arg_name" "$done_flag" "$multiple" "$subitem"
+}
+
+prompt_single_entry() {
+  local input
+  IFS= read -p '>' -r input
+  input=$(trim "$input")
+  if [[ -z "${input// /}" ]]; then
+    printf "Error: Empty TODO entry.\n" >&2
+    return 1
+  fi
+  printf "%s\n" "$input"
+}
+
+add_multiple_entries() {
+  local file="$1"
+  local done_flag="$2"
+  local i=0 mark="[ ]" line
+  [[ $done_flag -eq 1 ]] && mark="[x]"
+
+  printf "Enter multiple TODO entries (Ctrl+D to finish):\n"
+  while IFS= read -r line; do
+    line=$(trim "$line")
+    if [[ -n "${line// /}" ]]; then
+      if ! printf "%s %s\n" "$mark" "$line" >>"$file"; then
+        printf "Error: Failed to write entry to '%s'.\n" "$file" >&2
+        return 1
+      fi
+    fi
+    ((i += 1))
+  done
+  printf "Added '%s' lines\n" "$i"
+}
+
+add_item_entry() {
+  local file="$1"
+  local entry="$2"
+  local done_flag="$3"
+  local mark="[ ]"
+  [[ "$done_flag" -eq 1 ]] && mark="[x]"
+
+  printf "%s %s\n" "$mark" "$entry" >>"$file" || {
+    printf "Error: Failed to append entry to '%s'.\n" "$file" >&2
+    return 1
+  }
+}
+
+insert_subitem_entry() {
+  local file="$1"
+  local parent="$2"
+  local entry="$3"
+  local done_flag="$4"
+
+  local tmpfile
+  tmpfile=$(mktemp)
+  local inserted=0 indentation="" line
+  local mark="[ ]"
+  [[ "$done_flag" -eq 1 ]] && mark="[x]"
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    printf "%s\n" "$line" >>"$tmpfile"
+    if [[ "$inserted" -eq 0 && "$line" == *"$parent"* ]]; then
+      indentation="$(printf "%s" "$line" | grep -o '^[[:space:]]*')    "
+      printf "%s%s %s\n" "$indentation" "$mark" "$entry" >>"$tmpfile"
+      inserted=1
+    fi
+  done <"$file"
+
+  if [[ "$inserted" -eq 0 ]]; then
+    printf "%s %s\n" "$mark" "$entry" >>"$tmpfile"
+  fi
+
+  mv -- "$tmpfile" "$file" || {
+    printf "Error: Failed to update '%s' with subitem.\n" "$file" >&2
+    rm -f -- "$tmpfile"
+    return 1
+  }
+}
+
+add_todo_entry() {
+  local todo_file="$1"
+  local done_flag="$2"
+  local mult_flag="$3"
+  local sub_parent="$4"
+  [[ "$sub_parent" == "null" ]] && sub_parent=""
+
+  if [[ "$mult_flag" -eq 1 ]]; then
+    add_multiple_entries "$todo_file" "$done_flag"
+    return
+  fi
+
+  local entry
+  if ! entry=$(prompt_single_entry); then
+    return 1
+  fi
+
+  if [[ -n "$sub_parent" ]]; then
+    if ! insert_subitem_entry "$todo_file" "$sub_parent" "$entry" "$done_flag"; then
+      return 1
+    fi
+    printf "Added subitem under '%s' in %s\n" "$sub_parent" "$todo_file"
+  else
+    if ! add_item_entry "$todo_file" "$entry" "$done_flag"; then
+      return 1
+    fi
+    printf "Added new TODO entry to %s\n" "$todo_file"
+  fi
+}
+
+###################
+## edit command  ##
+###################
+
+edit_todo_file() {
+  if [[ -z "${EDITOR-}" ]]; then
+    printf "Error: EDITOR environment variable is not set.\n" >&2
+    return 1
+  fi
+  if [[ "$EDITOR" =~ [[:space:]] ]]; then
+    printf "Error: EDITOR must be a single command without spaces. Current: '%s'\n" "$EDITOR" >&2
+    return 1
+  fi
+  if ! command -v -- "$EDITOR" >/dev/null 2>&1; then
+    printf "Error: EDITOR '%s' not found in PATH.\n" "$EDITOR" >&2
+    return 1
+  fi
+
+  local todo_file="$1"
+  printf "Open %s with %s\n" "$todo_file" "$EDITOR"
+  if ! "$EDITOR" -- "$todo_file"; then
+    printf "Error: Failed to edit '%s'.\n" "$todo_file" >&2
+    return 1
+  fi
+}
+
+#####################
+## delete command  ##
+#####################
+
+delete_todo_file() {
+  local todo_file="$1"
+  local answer
+  printf "Are you sure you want to delete '%s'?: " "$todo_file"
+  IFS= read -r answer
+  answer=$(printf "%s" "$answer" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+
+  if [[ "$answer" != "y" && "$answer" != "yes" ]]; then
+    printf "Deletion aborted.\n"
+    return 0
+  fi
+
+  if ! rm -- "$todo_file"; then
+    printf "Error: Failed to delete '%s'.\n" "$todo_file" >&2
+    return 1
+  fi
+  printf "Deleted %s\n" "$todo_file"
+}
+
+###################
+## help command  ##
+###################
+
+display_help() {
+  cat <<EOF
+Usage: todo <command> [options] [name]
+
+Commands:
+  display [name]        Display contents of a .todo file (or first found)
+  list|ls [name]        Interactive list view for the specified .todo
+  create [name]         Create a new .todo file (default: default.todo)
+  add [-d|--done] [name] Add a new TODO entry (checked with -d)
+  edit [name]           Open the .todo in \$EDITOR
+  delete [name]         Delete a .todo file after confirmation
+  help                  Display this help message
+
+Options for add:
+  -d, --done            Mark new entry as already done ([x])
+
+Examples:
+  todo create project
+  todo add "Finish report"
+  todo add -d project
+  todo display project
+  todo ls
+  EDITOR=vim todo edit my_tasks
+  todo delete project
+EOF
+}
+
+#########################
+# ======== Main ======= #
+#########################
+
+handle_no_todo_file_cmds() {
+  local cmd="$1"
+  shift || true
+
+  case "$cmd" in
+  create)
+    create_todo_file "${1:-}"
+    ;;
+  list | ls)
+    list_todo_files
+    ;;
+  *)
+    return
+    ;;
+  esac
+  printf "done\n"
+}
+
+handle_commands() {
+  local cmd="$1"
+  shift || true
+  local args="$@"
+  local todo_file
+
+  if [[ $(handle_no_todo_file_cmds "$cmd" $args) == "done" ]]; then
+    return 0
+  fi
+
+  local arg_name add_flag_done add_flag_mult add_sub_parent
+  if [[ "$cmd" == "add" ]]; then
+    if ! read -r arg_name add_flag_done add_flag_mult add_sub_parent <<<"$(parse_add_args "$@")"; then
+      return 1
+    fi
+  else
+    arg_name="${1:-}"
+  fi
+
+  if ! todo_file=$(find_todo_file "$arg_name"); then
+    return 1
+  fi
+
+  case "$cmd" in
+  display)
+    display_todo_file "$todo_file"
+    ;;
+  show)
+    show_todo_file "$todo_file"
+    ;;
+  list | ls)
+    list_todo_files
+    ;;
+  add)
+    add_todo_entry "$todo_file" "$add_flag_done" "$add_flag_mult" "$add_sub_parent"
+    ;;
+  edit)
+    edit_todo_file "$todo_file"
+    ;;
+  delete)
+    delete_todo_file "$todo_file"
+    ;;
+  esac
+}
+
+auto_behavior() {
+  local todo_file
+  if ! todo_file=$(find_first_todo_file); then
+    return 1
+  fi
+
+  if [[ -t 1 ]]; then # ? If stdout is TTY
+    if ! command -v todo-list-interactiv >/dev/null 2>&1; then
+      printf "Error: sub-command 'todo-list-interactiv' not found.\n" >&2
+      return 1
+    fi
+    todo-list-interactiv "$todo_file"
+  else
+    display_todo_file "$todo_file"
+  fi
+}
+
+parse_args() {
+  local arg val
+
+  while [[ $# -gt 0 ]]; do
+    arg="$1"
+    case "$arg" in
+    --colors=*)
+      val="${arg#*=}"
+      if [[ "$val" != "auto" && "$val" != "always" && "$val" != "never" ]]; then
+        printf "Error: Invalid value for --colors. Expected auto, always, or never.\n" >&2
+        return 1
+      fi
+      COLOR_FLAG="$val"
+      ;;
+    -cl | --clear)
+      CLEAR_EXIT_FLAG=1
+      ;;
+    --colors)
+      shift || true
+      val="${1:-}"
+      if [[ "$val" != "auto" && "$val" != "always" && "$val" != "never" ]]; then
+        printf "Error: --colors requires one of: auto, always, never\n" >&2
+        return 1
+      fi
+      COLOR_FLAG="$val"
+      ;;
+    -*)
+      printf "Error: Unknown global option '%s'\n" "$arg" >&2
+      return 1
+      ;;
+    *)
+      break
+      ;;
+    esac
+    shift || true
+  done
+
+  #ARGS=("$@")
+}
+
+main() {
+  local arg="${1:-}"
+  shift || true
+
+  case "$arg" in
+  add | display | show | list | ls | create | edit | delete)
+    handle_commands "$arg" "$@"
+    ;;
+  help | --help | -h)
+    display_help
+    ;;
+  "")
+    auto_behavior
+    ;;
+  *)
+    printf "Error: Unknown command '%s'\n" "$arg" >&2
+    display_help
+    return 1
+    ;;
+  esac
+}
+
+main "$@"

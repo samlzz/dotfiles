@@ -1,0 +1,190 @@
+# oxker config file — thème Catppuccin Mocha
+#   rosewater = #f5e0dc  |  flamingo  = #f2cdcd  |  pink    = #f5c2e7
+#   mauve     = #cba6f7  |  red       = #f38ba8  |  maroon  = #eba0ac
+#   peach     = #fab387  |  yellow    = #f9e2af  |  green   = #a6e3a1
+#   teal      = #94e2d5  |  sky       = #89dceb  |  sapphire= #74c7ec
+#   blue      = #89b4fa  |  lavender  = #b4befe
+#   text      = #cdd6f4  |  subtext1  = #bac2de  |  subtext0= #a6adc8
+#   overlay2  = #9399b2  |  overlay1  = #7f849c  |  overlay0 = #6c7086
+#   surface2  = #585b70  |  surface1  = #45475a  |  surface0 = #313244
+#   base      = #1e1e2e  |  mantle    = #181825  |  crust   = #11111b
+
+docker_interval = 1000
+color_logs = false
+raw_logs = false
+show_self = false
+show_std_err = true
+show_timestamp = true
+gui = true
+# host = "/var/run/docker.sock"
+timezone = "Etc/UTC"
+timestamp_format = "%Y-%m-%dT%H:%M:%S.%8f"
+# save_dir = "$HOME"
+use_cli = false
+show_logs = true
+log_search_case_sensitive = true
+
+#################
+# Custom Keymap #
+#################
+
+[keymap]
+clear = ["c", "esc"]
+delete_deny = ["n"]
+delete_confirm = ["y"]
+exec = ["e"]
+filter_mode = ["/", "F1"]
+log_search_mode = ["#"]
+quit = ["q"]
+save_logs = ["s"]
+scroll_down = ["down", "j"]
+scroll_end = ["end"]
+scroll_many = ["control"]
+scroll_start = ["home"]
+scroll_up = ["up", "k"]
+scroll_forward = ["right"]
+scroll_back = ["left"]
+select_next_panel = ["tab"]
+select_previous_panel = ["backtab"]
+sort_by_name = ["1"]
+sort_by_state = ["2"]
+sort_by_status = ["3"]
+sort_by_cpu = ["4"]
+sort_by_memory = ["5"]
+sort_by_id = ["6"]
+sort_by_image = ["7"]
+sort_by_rx = ["8"]
+sort_by_tx = ["9"]
+sort_reset = ["0"]
+toggle_help = ["h"]
+toggle_mouse_capture = ["m"]
+log_section_height_decrease = ["-"]
+log_section_height_increase = ["+"]
+log_section_toggle = ["\\"]
+inspect = ["i"]
+force_redraw = ["f"]
+
+#################
+# Custom Colors #
+#################
+
+# Barre supérieure : fond mantle, texte lavender, spinner mauve
+[colors.headers_bar]
+background = "#181825"       # mantle
+loading_spinner = "#cba6f7"  # mauve
+text = "#b4befe"             # lavender
+text_selected = "#cdd6f4"    # text
+
+# Bordures : sélectionné = mauve, non-sélectionné = surface2
+[colors.borders]
+selected = "#cba6f7"    # mauve
+unselected = "#585b70"  # surface2
+
+# Conteneurs : texte blue, rx peach, tx maroon
+[colors.containers]
+icon = "#cdd6f4"        # text
+background = "reset"
+text = "#89b4fa"        # blue
+text_rx = "#fab387"     # peach
+text_tx = "#eba0ac"     # maroon
+
+# Logs : transparents (le fond du terminal s'applique)
+[colors.logs]
+background = "reset"
+text = "#cdd6f4"        # text
+
+# États des conteneurs
+[colors.container_state]
+dead = "#f38ba8"           # red
+exited = "#eba0ac"         # maroon
+paused = "#f9e2af"         # yellow
+removing = "#fab387"       # peach
+restarting = "#94e2d5"     # teal
+running_healthy = "#a6e3a1"    # green
+running_unhealthy = "#fab387"  # peach
+unknown = "#9399b2"        # overlay2
+
+# Filtre
+[colors.filter]
+background = "reset"
+text = "#a6adc8"                  # subtext0
+selected_filter_background = "#585b70"  # surface2
+selected_filter_text = "#cdd6f4"  # text
+highlight = "#cba6f7"             # mauve
+
+# Recherche dans les logs
+[colors.log_search]
+background = "reset"
+text = "#a6adc8"       # subtext0
+button_text = "#1e1e2e" # base
+highlight = "#f5c2e7"  # pink
+
+# Commandes Docker
+[colors.commands]
+background = "reset"
+pause = "#f9e2af"     # yellow
+restart = "#89dceb"   # sky
+stop = "#f38ba8"      # red
+delete = "#9399b2"    # overlay2
+resume = "#94e2d5"    # teal
+start = "#a6e3a1"     # green
+
+# Graphique CPU
+[colors.chart_cpu]
+background = "reset"
+border = "#585b70"    # surface2
+title = "#a6e3a1"     # green
+max = "#fab387"       # peach
+points = "#cba6f7"    # mauve
+y_axis = "#6c7086"    # overlay0
+
+# Graphique mémoire
+[colors.chart_memory]
+background = "reset"
+border = "#585b70"    # surface2
+title = "#a6e3a1"     # green
+max = "#fab387"       # peach
+points = "#89dceb"    # sky
+y_axis = "#6c7086"    # overlay0
+
+# Graphique bande passante
+[colors.chart_bandwidth]
+background = "reset"
+border = "#585b70"    # surface2
+max_rx = "#fab387"    # peach
+max_tx = "#eba0ac"    # maroon
+points_rx = "#fab387" # peach
+points_tx = "#eba0ac" # maroon
+title_rx = "#fab387"  # peach
+title_tx = "#eba0ac"  # maroon
+y_axis = "#6c7086"    # overlay0
+
+# Graphique ports
+[colors.chart_ports]
+background = "reset"
+border = "#585b70"    # surface2
+title = "#a6e3a1"     # green
+headings = "#f9e2af"  # yellow
+text = "#cdd6f4"      # text
+
+# Popup aide : fond mauve foncé → surface0, texte clair
+[colors.popup_help]
+background = "#313244"   # surface0
+text = "#cdd6f4"         # text
+text_highlight = "#cba6f7"  # mauve
+
+# Popup info : fond sapphire sombre → surface1
+[colors.popup_info]
+background = "#45475a"   # surface1
+text = "#cdd6f4"         # text
+
+# Popup suppression : fond surface0, texte text, alerte red
+[colors.popup_delete]
+background = "#313244"   # surface0
+text = "#cdd6f4"         # text
+text_highlight = "#f38ba8"  # red
+
+# Popup erreur : fond red, texte base (lisible)
+[colors.popup_error]
+background = "#f38ba8"   # red
+text = "#1e1e2e"         # base

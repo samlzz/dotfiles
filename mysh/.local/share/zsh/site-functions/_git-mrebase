@@ -1,0 +1,25 @@
+#compdef git-mrebase
+
+_git_mrebase_branches() {
+	local -a branches
+	branches=(${(f)"$(git branch --format='%(refname:short)' 2>/dev/null)"})
+	compadd -a branches
+}
+
+_git_mrebase_remotes() {
+	local -a remotes
+	remotes=(${(f)"$(git remote 2>/dev/null)"})
+	compadd -a remotes
+}
+
+_git-mrebase() {
+	_arguments -s \
+		'(- :)'{--continue,-c}'[Resume an in-progress mrebase session]' \
+		'(- :)--abort[Abort the current mrebase session]' \
+		'(-p --prompt)'{-p,--prompt}'[Show git log and prompt to push after rebase]' \
+		'--remote[Remote to push to (default\: origin)]:remote:_git_mrebase_remotes' \
+		':source branch:_git_mrebase_branches' \
+		'*:destination branch:_git_mrebase_branches'
+}
+
+_git-mrebase "$@"

@@ -1,0 +1,18 @@
+[Unit]
+Description=SwayOSD Server
+PartOf=graphical-session.target
+After=graphical-session.target
+Requires=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/swayosd-server --top-margin=0.08 -s %h/.config/swayosd/style.css
+Restart=on-failure
+RestartSec=2s
+Environment=WAYLAND_DISPLAY=wayland-1
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=GTK_THEME=Adwaita:dark
+Environment=GSETTINGS_BACKEND=memory
+
+[Install]
+WantedBy=graphical-session.target
