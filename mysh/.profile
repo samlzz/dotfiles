@@ -8,6 +8,16 @@ export XDG_STATE_HOME="$HOME/.local/state"
 export XDG_CACHE_HOME="$HOME/.cache"
 
 ### ─────────────────────────────────────────────────────────────
+### Force XDG usage
+### ─────────────────────────────────────────────────────────────
+
+export GNUPGHOME="$XDG_DATA_HOME/gnupg"
+export CARGO_HOME="$XDG_DATA_HOME/cargo"
+export GOPATH="$XDG_DATA_HOME/go"
+export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npm/npmrc"
+export DOCKER_CONFIG="$XDG_CONFIG_HOME/docker"
+
+### ─────────────────────────────────────────────────────────────
 ### Pager config
 ### ─────────────────────────────────────────────────────────────
 

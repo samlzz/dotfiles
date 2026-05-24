@@ -88,7 +88,7 @@ zmodload zsh/complist
 ### ─────────────────────────────────────────────────────────────
 ### Load sub config
 ### ─────────────────────────────────────────────────────────────
-for f in "$XDG_CONFIG_HOME"/zsh/conf.d/*; do
+for f in "$ZDOTDIR"/conf.d/*; do
     source "$f"
 done
 
