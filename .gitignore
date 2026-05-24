@@ -14,3 +14,8 @@ rclone/.config/rclone/rclone.conf
 # Runtime / cache
 *.log
 *.cache
+editor/.vim/.netrwhist
+
+# External binary
+mysh/.local/bin/oh-my-posh
+mysh/.local/bin/tilt
