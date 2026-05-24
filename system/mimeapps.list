@@ -1,0 +1,10 @@
+
+[Default Applications]
+text/html=com.brave.Browser.desktop
+x-scheme-handler/http=com.brave.Browser.desktop
+x-scheme-handler/https=com.brave.Browser.desktop
+x-scheme-handler/about=com.brave.Browser.desktop
+x-scheme-handler/unknown=com.brave.Browser.desktop
+x-scheme-handler/terminal=Alacritty.desktop
+x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+x-scheme-handler/deezer=deezer-enhanced.desktop
