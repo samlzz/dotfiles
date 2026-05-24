@@ -1,8 +1,9 @@
+[[ ! "$XDG_DATA_HOME/zsh" ]] && mkdir "$XDG_DATA_HOME/zsh"
 [[ ! "$XDG_STATE_HOME/zsh" ]] && mkdir "$XDG_STATE_HOME/zsh"
 [[ ! "$XDG_CACHE_HOME/zsh" ]] && mkdir "$XDG_CACHE_HOME/zsh"
 
 ### ─────────────────────────────────────────────────────────────
-### Oh-My-Zsh + Plugins
+### Plugins
 ### ─────────────────────────────────────────────────────────────
 plugins=(
   you-should-use
@@ -48,7 +49,7 @@ setopt HIST_VERIFY
 ### ─────────────────────────────────────────────────────────────
 ### Oh-My-Posh Configuration
 ### ─────────────────────────────────────────────────────────────
-eval "$($HOME/.local/bin/oh-my-posh init zsh --config $HOME/.config/ohmyposh/mocha_zen.toml)"
+eval "$($HOME/.local/bin/oh-my-posh init zsh --config $XDG_CONFIG_HOME/ohmyposh/mocha_zen.toml)"
 
 ### ─────────────────────────────────────────────────────────────
 ### CLI Tools Initialization
@@ -67,28 +68,29 @@ if command -v trash-put &> /dev/null; then
   }
 
   restore() {
-    mv "$HOME"/.local/share/Trash/files/"$1" .
+    mv "$XDG_DATA_HOME/Trash/files/$1" .
   }
 fi
 
 ### ─────────────────────────────────────────────────────────────
 ### Completion
 ### ─────────────────────────────────────────────────────────────
-fpath+=("$XDG_STATE_HOME/zsh/completion")
+SITE_FUNCTIONS="$XDG_DATA_HOME/zsh/site-functions"
+fpath+=("$SITE_FUNCTIONS")
 autoload -Uz compinit && compinit -d "$ZSH_COMPDUMP"
+
+[[ -f "$SITE_FUNCTIONS/custom_completion.zsh" ]] && source "$SITE_FUNCTIONS/custom_completion.zsh"
 
 # For rm_secure
 autoload -Uz complist
 zmodload zsh/complist
 
 ### ─────────────────────────────────────────────────────────────
-### Load Custom Features
+### Load sub config
 ### ─────────────────────────────────────────────────────────────
-[[ -f "$XDG_DATA_HOME/ctools/utils.zsh" ]] && source "$XDG_DATA_HOME/ctools/utils.zsh"
-
-[[ -f "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh" ]] && source "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh"
-
-[[ -f "$XDG_CONFIG_HOME/zsh/fzf.zsh" ]] && source "$XDG_CONFIG_HOME/zsh/fzf.zsh"
+for f in "$XDG_CONFIG_HOME"/zsh/conf.d/*; do
+    source "$f"
+done
 
 ### ─────────────────────────────────────────────────────────────
 ### nvm configuration

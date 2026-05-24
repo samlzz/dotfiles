@@ -39,5 +39,3 @@ fi
 if command -v 'uxplay' &> /dev/null; then
 	alias airplay='uxplay -p 7000 -s 1920x1080 -vs waylandsink -as pipewiresink'
 fi
-
-source "$XDG_DATA_HOME/ctools/git.zsh"
