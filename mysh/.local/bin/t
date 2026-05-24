@@ -65,22 +65,6 @@ if [ $HOME_SED_SAFE -eq 0 ]; then # $HOME should be safe to use in sed
 	HOME_REPLACER="s|^$HOME/|~/|"
 fi
 
-open_vscode() {
-	local dir="$1"
-	if [[ -z "$dir" ]] || [[ ! -d "$dir" ]]; then
-		printf "Invalid directory: %s\n" "$dir" >&2
-		return 1
-	fi
-
-	if ! command -v code >/dev/null 2>&1; then
-		printf "VSCode (code) is not installed or not in PATH.\n" >&2
-		return 1
-	fi
-
-	pgrep -f "code .*${dir}" >/dev/null && return 0
-	code "$dir" >/dev/null 2>&1 &
-}
-
 get_fzf_prompt() {
 	local fzf_prompt
 	local fzf_default_prompt='>  '
@@ -89,6 +73,7 @@ get_fzf_prompt() {
 	fi
 	[ -n "$fzf_prompt" ] && echo "$fzf_prompt" || echo "$fzf_default_prompt"
 }
+PROMPT=$(get_fzf_prompt)
 
 get_fzf_find_binding() {
 	local fzf_find_binding
@@ -98,6 +83,8 @@ get_fzf_find_binding() {
 	fi
 	[ -n "$fzf_find_binding" ] && echo "$fzf_find_binding" || echo "$fzf_find_binding_default"
 }
+
+FIND_BIND=$(get_fzf_find_binding)
 
 get_sessions_by_mru() {
 	if [ "$T_RUNTYPE" == "attached" ]; then
@@ -134,20 +121,14 @@ get_fzf_results() {
 	fi
 }
 
-PROMPT=$(get_fzf_prompt)
-FIND_BIND=$(get_fzf_find_binding)
 fzf_border_label_default=' t - smart tmux session manager '
 BORDER_LABEL=${T_FZF_BORDER_LABEL:-$fzf_border_label_default}
+
 HEADER=" ^s sessions ^x zoxide ^f find"
 SESSION_BIND="ctrl-s:change-prompt(sessions> )+reload(tmux list-sessions -F '#S')"
 ZOXIDE_BIND="ctrl-x:change-prompt(zoxide> )+reload(zoxide query -l | sed -e \"$HOME_REPLACER\")"
 TAB_BIND="tab:down,btab:up"
-NO_OP_CODE="true"
 
-if [[ "$1" == "-c" || "$1" == "--code" ]]; then
-	NO_OP_CODE="false"
-	shift
-fi
 if [ $# -ge 1 ]; then # argument provided
 	if [ "$1" = "-r" ] || [ "$1" == "--repo" ]; then
 		if [[ -z $T_REPOS_DIR ]]; then
@@ -168,6 +149,7 @@ if [ $# -ge 1 ]; then # argument provided
 		else
 			exit $? # exit code from last command
 		fi
+
 	else # not -r or --repo
 		zoxide query "$1" &>/dev/null
 		ZOXIDE_RESULT_EXIT_CODE=$?
@@ -284,9 +266,6 @@ if [ "$SESSION" = "" ]; then # session is missing
 		tmux new-session -d -s "$SESSION" -c "$RESULT" # create session
 	fi
 fi
-
-
-[ "$NO_OP_CODE" = "false" ] && open_vscode "$RESULT"
 
 case $T_RUNTYPE in # attach to session
 attached)
