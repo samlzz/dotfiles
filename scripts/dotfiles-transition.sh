@@ -9,8 +9,6 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-export HOME="/tmp/home-dotfiles-test"
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants & globals
 # ─────────────────────────────────────────────────────────────────────────────
@@ -27,6 +25,14 @@ readonly SEARCH_ROOTS=(
     "$HOME/.local/bin"
 )
 
+# Recap (populated throughout execution)
+RECAP=()
+
+# record_action <type> <path>
+# Types: identical | deleted | overwritten | edited | stowed | skipped | not_found
+record_action() { RECAP+=("$1|$2"); }
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Colours
 readonly C_RESET='\033[0m'
 readonly C_BOLD='\033[1m'
@@ -212,7 +218,7 @@ handle_diff() {
         warn "Files differ."
         local choice
         choice="$(prompt_choice \
-            "  [e] Edit source  [d] Delete system (keep dotfiles)  [o] Overwrite dotfiles with system  [s] Skip" \
+            "  [e] Edit source (dotfiles)  [d] Delete system (keep dotfiles)  [o] Overwrite dotfiles with system  [s] Skip" \
             e d o s)"
 
         case "$choice" in
@@ -221,28 +227,32 @@ handle_diff() {
                 # Re-evaluate after edit
                 if diff -q "$source" "$real" &>/dev/null; then
                     log "EDIT" "$source"
+                    record_action edited "$source"
                     success "Files are now identical after edit."
                     remove_real_file "$real"
                     return 0
                 else
                     info "Files still differ — showing updated diff."
-                    # Loop again
+                    # ? loop again
                 fi
                 ;;
             d)
                 log "DELETE_DESPITE_DIFF" "$real"
+                record_action deleted "$source"
                 remove_real_file "$real"
                 return 0
                 ;;
             o)
                 cp "$real" "$source"
                 log "OVERWRITE_SOURCE" "$source <- $real"
+                record_action overwritten "$source"
                 success "Dotfiles source overwritten with system file: ${source}"
                 remove_real_file "$real"
                 return 0
                 ;;
             s)
                 log "SKIP" "$real"
+                record_action skipped "$source"
                 dim "Skipped: ${real}"
                 return 0
                 ;;
@@ -281,6 +291,7 @@ process_source_file() {
 
         if [[ -z "$real_file" ]]; then
             log "SKIPPED_NOT_FOUND" "$filename"
+            record_action not_found "$source"
             dim "Skipped (not found, user aborted fzf)."
             return 0
         fi
@@ -302,6 +313,7 @@ process_source_file() {
 
         if [[ -z "$real_file" ]]; then
             log "SKIPPED_MULTI" "$filename"
+            record_action skipped "$source"
             dim "Skipped (user aborted fzf on multiple matches)."
             return 0
         fi
@@ -313,6 +325,7 @@ process_source_file() {
         link_target="$(readlink -f "$real_file" 2>/dev/null || true)"
         if [[ "$link_target" == "$pkg_root"* ]]; then
             log "ALREADY_STOWED" "$real_file"
+            record_action stowed "$source"
             success "Already stowed, skipping: ${real_file}"
             return 0
         fi
@@ -321,11 +334,74 @@ process_source_file() {
     # ── Compare & act ─────────────────────────────────────────────────────
     if diff -q "$source" "$real_file" &>/dev/null; then
         log "IDENTICAL_DELETE" "$real_file"
+        record_action identical "$source"
         success "Identical — deleting system file: ${real_file}"
         remove_real_file "$real_file"
     else
         handle_diff "$source" "$real_file"
     fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Recapprocess_source_file
+
+print_recap() {
+    [[ ${#RECAP[@]} -eq 0 ]] && return 0
+
+    local -A order_map=(
+        [identical]=0 [deleted]=1 [overwritten]=2 [edited]=3
+        [stowed]=4 [skipped]=5 [not_found]=6
+    )
+    local -A labels=(
+        [identical]="Identical → system file deleted"
+        [deleted]="Kept dotfiles → system file deleted"
+        [overwritten]="Dotfiles overwritten with system version"
+        [edited]="Edited in \$EDITOR → system file deleted"
+        [stowed]="Already stowed"
+        [skipped]="Skipped"
+        [not_found]="Not found on system"
+    )
+    local -A colors=(
+        [identical]="$C_GREEN" [deleted]="$C_GREEN"
+        [overwritten]="$C_GREEN" [edited]="$C_GREEN"
+        [stowed]="$C_CYAN" [skipped]="$C_DIM" [not_found]="$C_YELLOW"
+    )
+    local -A icons=(
+        [identical]="✓" [deleted]="✓" [overwritten]="✓" [edited]="✓"
+        [stowed]="~" [skipped]="-" [not_found]="?"
+    )
+
+    local -A counts=()
+    local -A entries=()
+    for entry in "${RECAP[@]}"; do
+        local type="${entry%%|*}"
+        local path="${entry#*|}"
+        counts[$type]=$(( ${counts[$type]:-0} + 1 ))
+        entries[$type]+="$(basename "$path")"$'\n'
+    done
+
+    print_separator "RECAP"
+
+    local type_order=(identical deleted overwritten edited stowed skipped not_found)
+    for type in "${type_order[@]}"; do
+        [[ -z "${counts[$type]:-}" ]] && continue
+        local n="${counts[$type]}"
+        local color="${colors[$type]}"
+        printf "${color}${C_BOLD}  ${icons[$type]}  ${labels[$type]} (${n})${C_RESET}\n"
+        while IFS= read -r name; do
+            [[ -z "$name" ]] && continue
+            dim "$name"
+        done <<< "${entries[$type]}"
+        printf '\n'
+    done
+
+    printf "${C_BOLD}  %d file(s) processed${C_RESET}" "${#RECAP[@]}"
+    for type in "${type_order[@]}"; do
+        [[ -z "${counts[$type]:-}" ]] && continue
+        printf " · ${colors[$type]}${counts[$type]} ${type}${C_RESET}"
+    done
+    printf '\n'
+    dim "Full log: ${LOG_FILE}"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -383,10 +459,8 @@ main() {
 
     done < <(find "$pkg_root" \( -type f -o -type l \) | sort)
 
-    print_separator "DONE"
     log "DONE" "processed=${processed}"
-    info "All files processed."
-    dim "Full log: ${LOG_FILE}"
+    print_recap
 }
 
 main "$@"
