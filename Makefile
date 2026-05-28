@@ -2,7 +2,7 @@ STOW_DIR := $(CURDIR)
 TARGET   := $(HOME)
 
 # Répertoires non-stowés (séparés par des espaces)
-EXCLUDE  := templates out_home packages
+EXCLUDE  := templates out_home mypkg
 
 ALL_DIRS := $(patsubst %/,%,$(wildcard */))
 PACKAGES := $(filter-out $(EXCLUDE),$(ALL_DIRS))
