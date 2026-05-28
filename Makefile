@@ -2,7 +2,7 @@ STOW_DIR := $(CURDIR)
 TARGET   := $(HOME)
 
 # Répertoires non-stowés (séparés par des espaces)
-EXCLUDE  := templates out_home
+EXCLUDE  := templates out_home packages
 
 ALL_DIRS := $(patsubst %/,%,$(wildcard */))
 PACKAGES := $(filter-out $(EXCLUDE),$(ALL_DIRS))
@@ -19,20 +19,38 @@ list: ## List available packages
 	@echo "Available packages:"
 	@for p in $(PACKAGES); do echo "  $$p"; done
 
+# _check_excluded — warn and prompt if any word in PKG is in EXCLUDE
+define _check_excluded
+	@for p in $(PKG); do \
+		for e in $(EXCLUDE); do \
+			if [ "$$p" = "$$e" ]; then \
+				printf "\033[1;33m  !  '$$p' is in EXCLUDE (not meant to be stowed).\033[0m\n"; \
+				printf "\033[1m  Proceed anyway? [y/N]: \033[0m"; \
+				read ans; \
+				[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "Aborted."; exit 1; }; \
+			fi; \
+		done; \
+	done
+endef
+
 stow: ## Stow one or more packages        →  make stow PKG="mysh git"
 	@test -n "$(PKG)" || (echo "usage: make stow PKG=\"pkg1 pkg2\"" && exit 1)
+	$(call _check_excluded)
 	stow --dir=$(STOW_DIR) --target=$(TARGET) $(PKG)
 
 unstow: ## Unstow one or more packages      →  make unstow PKG="mysh git"
 	@test -n "$(PKG)" || (echo "usage: make unstow PKG=\"pkg1 pkg2\"" && exit 1)
+	$(call _check_excluded)
 	stow --dir=$(STOW_DIR) --target=$(TARGET) -D $(PKG)
 
 restow: ## Re-symlink one or more packages  →  make restow PKG="mysh"
 	@test -n "$(PKG)" || (echo "usage: make restow PKG=\"pkg1 pkg2\"" && exit 1)
+	$(call _check_excluded)
 	stow --dir=$(STOW_DIR) --target=$(TARGET) -R $(PKG)
 
 dry-run: ## Simulate stow without applying   →  make dry-run PKG="mysh git"
 	@test -n "$(PKG)" || (echo "usage: make dry-run PKG=\"pkg1 pkg2\"" && exit 1)
+	$(call _check_excluded)
 	stow --dir=$(STOW_DIR) --target=$(TARGET) -nv $(PKG)
 
 stow-all: ## Stow all packages
