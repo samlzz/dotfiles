@@ -33,6 +33,55 @@ RECAP=()
 record_action() { RECAP+=("$1|$2"); }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Interrupt handling & rollback
+
+BACKUP_DIR=""
+declare -A BACKUPS=()
+
+# backup_file <path> — save a copy to BACKUP_DIR, register in BACKUPS
+backup_file() {
+    local original="$1"
+    local tmp
+    tmp="$(mktemp "${BACKUP_DIR}/backup_XXXXXX")"
+    cp -p "$original" "$tmp" 2>/dev/null && BACKUPS["$original"]="$tmp" || true
+}
+
+_cleanup() {
+    [[ -n "$BACKUP_DIR" && -d "$BACKUP_DIR" ]] && rm -rf "$BACKUP_DIR"
+}
+
+_on_interrupt() {
+    printf '\n' >/dev/tty
+    warn "Interrupted — attempting to restore modified files..."
+
+    local restored=0 failed=0
+    for original in "${!BACKUPS[@]}"; do
+        local backup="${BACKUPS[$original]}"
+        [[ -f "$backup" ]] || continue
+        mkdir -p "$(dirname "$original")"
+        if cp -p "$backup" "$original" 2>/dev/null; then
+            success "Restored: ${original}"
+            (( restored++ )) || true
+        else
+            err "Failed to restore: ${original}"
+            (( failed++ )) || true
+        fi
+    done
+
+    if (( restored > 0 || failed > 0 )); then
+        printf '\n'
+        info "${restored} file(s) restored, ${failed} failed."
+    else
+        info "No files to restore."
+    fi
+    dim "Full log: ${LOG_FILE}"
+    exit 130
+}
+
+trap '_cleanup' EXIT
+trap '_on_interrupt' INT TERM
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Colours
 readonly C_RESET='\033[0m'
 readonly C_BOLD='\033[1m'
@@ -192,6 +241,7 @@ remove_real_file() {
     local parent_dir
     parent_dir="$(dirname "$real")"
 
+    backup_file "$real"
     rm -f "$real"
     log "DELETE" "$real"
     success "Deleted: ${real}"
@@ -243,6 +293,7 @@ handle_diff() {
                 return 0
                 ;;
             o)
+                backup_file "$source"
                 cp "$real" "$source"
                 log "OVERWRITE_SOURCE" "$source <- $real"
                 record_action overwritten "$source"
@@ -441,6 +492,7 @@ main() {
 
     check_deps
     _ensure_log_dir
+    BACKUP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-transition-XXXXXX")"
 
     info "Starting dotfiles transition for package: ${pkg_root}"
     info "Log file: ${LOG_FILE}"
