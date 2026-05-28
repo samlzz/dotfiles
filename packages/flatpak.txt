@@ -1,4 +1,6 @@
-app.zen_browser.zen
+com.brave.Browser
 com.discordapp.Discord
+com.mojang.Minecraft
 dev.aunetx.deezer
 md.obsidian.Obsidian
+org.cryptomator.Cryptomator

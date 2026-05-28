@@ -1,0 +1,17 @@
+#compdef hcreate
+
+_hcreate() {
+	_arguments -C \
+		'(--template --functions --c)--interface[Generate an interface (pure abstract class)]' \
+		'(--interface --functions --c)--template[Generate a template class (no .cpp)]' \
+		'(--interface --template --c)--functions[Generate a free-functions header (no class)]' \
+		'(--interface --template --functions)--c[Generate a C header (.h)]' \
+		\
+		'--namespace+[Wrap generated code in the given namespace]:namespace:' \
+		'--honly[Only generate header file]' \
+		'--tpp[With --template: generate a .tpp file]' \
+		'(-o --overwrite)'{-o,--overwrite}'[Overwrite files if they already exist]' \
+		'(-h --help)'{-h,--help}'[Display help and exit]' \
+		\
+		'*:path:_files'
+}

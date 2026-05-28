@@ -142,10 +142,10 @@ HEADER=" ^s sessions ^x zoxide ^f find"
 SESSION_BIND="ctrl-s:change-prompt(sessions> )+reload(tmux list-sessions -F '#S')"
 ZOXIDE_BIND="ctrl-x:change-prompt(zoxide> )+reload(zoxide query -l | sed -e \"$HOME_REPLACER\")"
 TAB_BIND="tab:down,btab:up"
-NO_OP_CODE="false"
+NO_OP_CODE="true"
 
-if [[ "$1" == "-nc" || "$1" == "--nocode" ]]; then
-	NO_OP_CODE="true"
+if [[ "$1" == "-c" || "$1" == "--code" ]]; then
+	NO_OP_CODE="false"
 	shift
 fi
 if [ $# -ge 1 ]; then # argument provided

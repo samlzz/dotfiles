@@ -1,5 +1,6 @@
 **/**.swp
 .vscode/*
+.cache
 
 **/ign_*
 

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HC_ROOT="$XDG_DATA_HOME/hcreate"
+
+. "$HC_ROOT/lib/utils.sh"
+. "$HC_ROOT/lib/guards.sh"
+. "$HC_ROOT/lib/namespace.sh"
+. "$HC_ROOT/lib/cli.sh"
+. "$HC_ROOT/lib/dispatch.sh"
+
+. "$HC_ROOT/generators/cpp_class.sh"
+. "$HC_ROOT/generators/cpp_interface.sh"
+. "$HC_ROOT/generators/cpp_template.sh"
+. "$HC_ROOT/generators/cpp_functions.sh"
+. "$HC_ROOT/generators/c_header.sh"
+
+main "$@"

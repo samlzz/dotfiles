@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from queue import Full
-import argparse, sys, os
+import argparse
+import sys
 
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-from gi.repository import Gtk, Gdk, Adw, GLib
+from gi.repository import Gtk, Gdk, Adw, GLib  # noqa: E402
+
+Adw.init()
 
 # ---------------- Catppuccin Mocha color palette ----------------
 C = {
@@ -39,8 +41,61 @@ C = {
     "crust":"#11111b"
 }
 
-def build_css(bg_alpha=0.40, accent="mauve", card_bg="base"):
-    """Generate dynamic CSS for the popup style."""
+# def build_css_old(bg_alpha=0.30, accent="mauve", card_bg="base"):
+#     """Generate dynamic CSS for the popup style."""
+#     (r, g, b) = (
+#         int(C[accent][1:3],16), int(C[accent][3:5],16), int(C[accent][5:7],16)
+#     )
+#     return f"""
+#     window, window.background, .transparent-bg {{
+#         background-color: transparent;
+#         background: transparent;
+#     }}
+#     .overlay-bg {{
+#         background-color: rgba({r}, {g}, {b}, {bg_alpha});
+#     }}
+#     #card {{
+#         background: {C[card_bg]};
+#         color: {C['text']};
+#         border-radius: 24px;
+#         padding: 36px 42px;
+#         box-shadow: 0 16px 64px 0 rgba(0,0,0,0.55);
+#         border: 1px solid {C['surface1']};
+#     }}
+#     #title {{
+#         font-weight: 800;
+#         font-size: 40px;
+#         letter-spacing: 0.3px;
+#     }}
+#     #msg {{
+#         margin-top: 12px;
+#         font-size: 20px;
+#         color: {C['subtext1']};
+#     }}
+#     button.cta {{
+#         background: {C['mauve']};
+#         color: #0b0b0f;
+#         border-radius: 14px;
+#         padding: 10px 18px;
+#         margin-top: 4px;
+#         border: none;
+#         font-weight: 700;
+#     }}
+#     button.ghost {{
+#         background: {C['surface1']};
+#         color: {C['text']};
+#         border-radius: 14px;
+#         padding: 10px 16px;
+#         margin-top: 4px;
+#         border: 1px solid {C['surface2']};
+#         font-weight: 600;
+#     }}
+#     button.cta:hover, button.ghost:hover {{
+#         filter: brightness(1.05);
+#     }}
+#     """
+    
+def build_css(bg_alpha=0.30, accent = "mauve", card_bg = "base"):
     (r, g, b) = (
         int(C[accent][1:3],16), int(C[accent][3:5],16), int(C[accent][5:7],16)
     )
@@ -61,34 +116,15 @@ def build_css(bg_alpha=0.40, accent="mauve", card_bg="base"):
         border: 1px solid {C['surface1']};
     }}
     #title {{
-        font-weight: 800;
         font-size: 40px;
-        letter-spacing: 0.3px;
+        font-weight: 700;
     }}
     #msg {{
         margin-top: 12px;
         font-size: 20px;
         color: {C['subtext1']};
     }}
-    button.cta {{
-        background: {C['mauve']};
-        color: #0b0b0f;
-        border-radius: 14px;
-        padding: 10px 18px;
-        margin-top: 4px;
-        border: none;
-        font-weight: 700;
-    }}
-    button.ghost {{
-        background: {C['surface1']};
-        color: {C['text']};
-        border-radius: 14px;
-        padding: 10px 16px;
-        margin-top: 4px;
-        border: 1px solid {C['surface2']};
-        font-weight: 600;
-    }}
-    button.cta:hover, button.ghost:hover {{
+    button:hover {{
         filter: brightness(1.05);
     }}
     """
@@ -128,8 +164,8 @@ def monitor_value(v: str):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Catppuccin Mocha fullscreen popup (Adw/GTK4)")
-    p.add_argument("--title", default="  Time to stop! ")
-    p.add_argument("--message", default="It's time to stop and shut down your computer.")
+    p.add_argument("--title", default="  Time to stop ! ")
+    p.add_argument("--message", default="")
     p.add_argument("--close-btn", action="store_true", default=False)
     p.add_argument("--timeout", type=nonneg_int, default=0, help="auto-close timeout (s, 0=off)")
     p.add_argument("--snooze", type=nonneg_int, default=0, help="snooze time (s, 0=off)")
@@ -162,7 +198,7 @@ class FullscreenPopup(Gtk.ApplicationWindow):
         super().__init__(*a, **kw)
 
         self.monitor = monitor
-        self.init_win(p_args.opacity)
+        self.init_win()
 
         self.snooze_duration = p_args.snooze
         self.init_popup_center(p_args)
@@ -179,7 +215,7 @@ class FullscreenPopup(Gtk.ApplicationWindow):
     def on_any_click(self, *args):
         print("CLICK ANYWHERE")
 
-    def init_win(self, opacity: float):
+    def init_win(self):
         self.set_title("Catppuccin Mocha Popup")
         self.set_decorated(False)
         self.set_resizable(False)
@@ -188,22 +224,18 @@ class FullscreenPopup(Gtk.ApplicationWindow):
         self.root = Gtk.Overlay()
         self.root.set_hexpand(True)
         self.root.set_vexpand(True)
-        self.root.add_css_class('transparent-bg')
 
         self.bg = Gtk.Box()
         self.bg.set_hexpand(True)
         self.bg.set_vexpand(True)
         self.bg.add_css_class('overlay-bg')
-        #self.bg.set_opacity(opacity)
         self.root.set_child(self.bg)
 
         self.center = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.center.set_valign(Gtk.Align.CENTER)
         self.center.set_halign(Gtk.Align.CENTER)
-        self.center.add_css_class('overlay')
         self.root.add_overlay(self.center)
 
-        self.add_css_class('transparent-bg')
         self.set_child(self.root)
 
     def init_popup_center(self, args):
@@ -213,7 +245,7 @@ class FullscreenPopup(Gtk.ApplicationWindow):
         self.center.append(card)
         
     def init_css(self, args):
-        css_data = build_css(args.opacity, args.accent, args.card_bg)
+        css_data = build_css(args.opacity)
         provider= Gtk.CssProvider()
         provider.load_from_data(css_data.encode())
         Gtk.StyleContext.add_provider_for_display(
@@ -249,13 +281,11 @@ class FullscreenPopup(Gtk.ApplicationWindow):
 
         if has_close_btn:
             close_btn = Gtk.Button(label="Dismiss")
-            close_btn.add_css_class("ghost")
             close_btn.connect('clicked', self.on_close_clicked)
             btn_box.append(close_btn)
 
         if has_snz_btn:
             snooze_btn = Gtk.Button(label=f"Snooze {self.snooze_duration//60} min")
-            snooze_btn.add_css_class("cta")
             snooze_btn.connect('clicked', self.on_snooze_clicked)
             btn_box.append(snooze_btn)
 
@@ -314,7 +344,7 @@ class MyApp(Adw.Application):
 # ---------------- entrypoint ----------------
 def main():
     args = parse_args()
-    app = MyApp(args, application_id="com.fspopup.GtkApplication")
+    app = MyApp(args, application_id="dev.local.fspopup.GtkApplication")
     sys.exit(app.run())
 
 if __name__ == "__main__":

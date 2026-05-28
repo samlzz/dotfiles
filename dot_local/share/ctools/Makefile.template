@@ -2,7 +2,7 @@
 #* >> USER CONFIGURATION (MANDATORY)
 # =============================================================================
 
-NAME      ?= 
+NAME      = 
 ifeq ($(NAME),)
     $(error NAME is empty: please define executable name)
 endif
@@ -93,7 +93,7 @@ endif
 
 OUT := $(if $(BIN_DIR),$(BIN_DIR),./)$(NAME)
 
-export VERBOSE    := false
+export VERBOSE    ?= false
 export P := @
 ifeq ($(VERBOSE),true)
 	P :=

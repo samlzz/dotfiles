@@ -35,6 +35,7 @@
 #connectivity,
 #custom-updates,
 #clock,
+#custom-timer,
 #custom-clipboard,
 #custom-power {
   background-color: alpha(@surface0, 0.9);
@@ -223,6 +224,22 @@
 
 #submap {
   color: @peach;
+}
+
+/* ##################################################
+#######            MODULE : TIMER            #####
+################################################## */
+
+#custom-timer {
+  font-size: 18px;
+  padding: 0 0.5em;
+  padding-right: 0.7em;
+  color: @peach;                            /* Accent Catppuccin Mocha */
+  transition: color 0.3s ease;
+}
+
+#custom-timer:hover {
+  color: @red;                             /* Changement subtil au survol */
 }
 
 /* ##################################################

@@ -27,14 +27,6 @@ _gitingest() {
 }
 compdef _gitingest gitingest
 
-# Completion for hcreate
-_hcreate() {
-	_arguments \
-		'--c[Custom option]' \
-		'*:file:_files'
-}
-compdef _hcreate hcreate
-
 # Completion for managedns
 _managedns() {
 	_values 'DNS State' on off state

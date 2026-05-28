@@ -35,3 +35,4 @@ wlf-paste() {
 cpbak() {
 	cp "$1" "$1.bak"
 }
+

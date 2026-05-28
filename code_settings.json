@@ -47,7 +47,7 @@
   },
   "basedpyright.analysis.typeCheckingMode": "off",
   "terminal.integrated.inheritEnv": false,
-  "editor.insertSpaces": false,
+  "editor.insertSpaces": true,
   "editor.useTabStops": false,
   "[ignore]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
@@ -65,14 +65,39 @@
   "search.followSymlinks": true,
   "gitlens.graph.minimap.enabled": false,
   "gitlens.views.commitDetails.files.layout": "tree",
-  "gitlens.ai.model": "gitkraken",
+  "gitlens.ai.model": "vscode",
 "gitlens.ai.gitkraken.model": "gemini:gemini-2.0-flash",
 "files.associations": {
-	"*.h": "c"
+	"*.h": "c",
+	"*.cql": "sql"
 },
 "clangd.checkUpdates": true,
 "clangd.arguments": [
 ],
-"clangd.path": "/home/sliziard/.config/Code/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/21.1.0/clangd_21.1.0/bin/clangd",
-"explorer.confirmDelete": false
+"clangd.path": "/home/sliziard/.config/Code/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/22.1.0/clangd_22.1.0/bin/clangd",
+"explorer.confirmDelete": false,
+"diffEditor.ignoreTrimWhitespace": true,
+"maptz.regionfolder.collapseDefaultRegionsOnOpen": true,
+"gitlens.graph.layout": "editor",
+"github.copilot.nextEditSuggestions.enabled": false,
+"github.copilot.enable": {
+	"*": false,
+	"plaintext": false,
+	"markdown": false,
+	"scminput": false
+},
+"gitlens.ai.vscode.model": "copilot:claude-opus-4.6",
+"dotnet.completion.provideRegexCompletions": false,
+"dotnet.automaticallyCreateSolutionInWorkspace": false,
+"vim.useSystemClipboard": true,
+"[csharp]": {
+    // "editor.maxTokenizationLineLength": 2500
+},
+"workbench.startupEditor": "none",
+"dotnetAcquisitionExtension.sharedExistingDotnetPath": "/usr/bin/dotnet",
+"git.openRepositoryInParentFolders": "always",
+"liveServer.settings.donotShowInfoMsg": true,
+"chat.tools.terminal.autoApprove": {
+    "sed": true
+}
 }

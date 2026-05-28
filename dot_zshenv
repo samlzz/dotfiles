@@ -14,7 +14,7 @@ export XDG_DATA_HOME="$HOME/.local/share"
 
 export COLORTERM=truecolor
 
-export LESS='--mouse --wheel-lines=3 -RFX'
+export LESS='--mouse --wheel-lines=3 -RF'
 export PAGER='less -R'
 
 # Use bat as manpager with stripped ANSI
@@ -27,6 +27,8 @@ fi
 ### ─────────────────────────────────────────────────────────────
 ### User config
 ### ─────────────────────────────────────────────────────────────
+
+export CTOOLS_DIR="$XDG_DATA_HOME/ctools"
 
 if command -v nvim &> /dev/null; then
   export EDITOR=nvim

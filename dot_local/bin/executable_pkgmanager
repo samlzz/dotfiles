@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# pkgmanager.sh — interactive package manager with fzf
+
+set -euo pipefail
+
+# ── Colors ────────────────────────────────────────────────────────────────────
+RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
+
+# ── Package source ────────────────────────────────────────────────────────────
+get_packages() {
+  case "$1" in
+    all)       pacman -Qq ;;
+    explicit)  pacman -Qqe ;;
+    orphans)   pacman -Qqtd ;;
+    foreign)   pacman -Qqm ;;   # AUR / manual
+  esac
+}
+
+# ── Package preview ───────────────────────────────────────────────────────────
+preview_pkg() {
+  local pkg="$1"
+  echo -e "${BOLD}━━━ Info ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  pacman -Qi "$pkg" 2>/dev/null || pacman -Si "$pkg" 2>/dev/null
+  echo -e "\n${BOLD}━━━ Installed files (first 10) ━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  pacman -Ql "$pkg" 2>/dev/null | head -10
+  echo -e "\n${BOLD}━━━ Dependencies ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  pactree -d1 "$pkg" 2>/dev/null || echo "(pactree not available)"
+  echo -e "\n${BOLD}━━━ Required by ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  pactree -r -d1 "$pkg" 2>/dev/null || echo "(none)"
+}
+export -f preview_pkg
+export RED YELLOW GREEN CYAN BOLD RESET
+
+# ── Source menu ───────────────────────────────────────────────────────────────
+choose_source() {
+  printf '%s\n' \
+    "1) All installed packages" \
+    "2) Explicitly installed packages" \
+    "3) Orphan packages (unused dependencies)" \
+    "4) Foreign packages (AUR / manual)" \
+  | fzf --no-multi --layout=reverse --prompt="Source > " \
+        --header="Choose source list" \
+  | grep -o '^[0-9]'
+}
+
+source_key_from_id() {
+  case "$1" in
+    1) printf "all" ;;
+    2) printf "explicit" ;;
+    3) printf "orphans" ;;
+    4) printf "foreign" ;;
+    *) exit 0 ;;
+  esac
+}
+
+# ── Action menu ───────────────────────────────────────────────────────────────
+choose_action() {
+  local pkgs="$1"
+  printf '%s\n' \
+    "1) Detailed info              (pacman -Qi)" \
+    "2) File list                  (pacman -Ql)" \
+    "3) Dependency tree            (pactree)" \
+    "4) Reverse tree (required by) (pactree -r)" \
+    "5) Uninstall                  (pacman -Rns)" \
+    "6) Uninstall + cascade        (pacman -Rcns)" \
+    "7) Mark as dependency         (pacman -D --asdeps)" \
+    "8) Mark as explicit           (pacman -D --asexplicit)" \
+    "9) Cancel" \
+  | fzf --no-multi --layout=reverse --prompt="Action > " \
+        --header="Action on: $pkgs" \
+  | grep -o '^[0-9]'
+}
+
+# ── Continue menu ─────────────────────────────────────────────────────────────
+choose_continue() {
+  printf '%s\n' \
+    "1) Continue (another action)" \
+    "2) Back to package selection" \
+    "3) Quit" \
+  | fzf --no-multi --layout=reverse --prompt="What next? > " \
+        --preview-window=hidden \
+  | grep -o '^[0-9]'
+}
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+main() {
+  local source_key
+  source_key=$(source_key_from_id "$(choose_source)") || exit 0
+
+  local pkg_list
+  pkg_list=$(get_packages "$source_key")
+
+  if [[ -z "$pkg_list" ]]; then
+    echo -e "${YELLOW}No packages in this category.${RESET}"
+    exit 0
+  fi
+
+  while true; do
+    # Select packages with space (multi)
+    local selected
+    selected=$(echo "$pkg_list" \
+      | fzf --multi \
+            --layout=reverse \
+            --prompt="Package > " \
+            --header="TAB: select multiple | ENTER: confirm selection" \
+            --preview='bash -c "preview_pkg {}"' \
+            --preview-window='right:55%:wrap' \
+    ) || exit 0
+
+    [[ -z "$selected" ]] && echo -e "${YELLOW}No packages selected.${RESET}" && exit 0
+
+    local pkgs_inline action_id continue_choice
+    pkgs_inline=$(echo "$selected" | tr '\n' ' ' | sed 's/ $//')
+
+    while true; do
+      action_id=$(choose_action "$pkgs_inline") || break
+
+      echo ""
+      case "$action_id" in
+        1) pacman -Qi $pkgs_inline | fzf --no-multi --layout=reverse --preview-window=hidden ;;
+        2) pacman -Ql $pkgs_inline | fzf --no-multi --layout=reverse --preview-window=hidden ;;
+        3) (for p in $pkgs_inline; do
+             echo -e "${BOLD}==> $p${RESET}"; pactree "$p" 2>/dev/null || echo "(pactree not available)"; echo
+           done) | fzf --no-multi --layout=reverse --preview-window=hidden
+        ;;
+        4) (for p in $pkgs_inline; do
+             echo -e "${BOLD}==> $p${RESET}"; pactree -r "$p" 2>/dev/null || echo "(no reverse dependencies)"; echo
+           done) | fzf --no-multi --layout=reverse --preview-window=hidden
+        ;;
+        5) printf '%s\n' "CONFIRM: Uninstall with pacman -Rns" "" "$pkgs_inline" \
+           | fzf --no-multi --layout=reverse --prompt="Press Enter to confirm or Esc to cancel > " \
+                 --preview-window=hidden >/dev/null && \
+           sudo pacman -Rns $pkgs_inline && \
+           echo -e "${GREEN}✓ Uninstalled.${RESET}"
+        ;;
+        6) printf '%s\n' "CONFIRM: Cascade uninstall with pacman -Rcns" "" "⚠️  Also removes packages that depend on these" "" "$pkgs_inline" \
+           | fzf --no-multi --layout=reverse --prompt="Press Enter to confirm or Esc to cancel > " \
+                 --preview-window=hidden >/dev/null && \
+           sudo pacman -Rcns $pkgs_inline && \
+           echo -e "${GREEN}✓ Cascade uninstalled.${RESET}"
+        ;;
+        7) sudo pacman -D --asdeps $pkgs_inline && \
+           echo -e "${GREEN}✓ Marked as dependencies${RESET}" \
+           | fzf --no-multi --layout=reverse --preview-window=hidden >/dev/null
+        ;;
+        8) sudo pacman -D --asexplicit $pkgs_inline && \
+           echo -e "${GREEN}✓ Marked as explicit${RESET}" \
+           | fzf --no-multi --layout=reverse --preview-window=hidden >/dev/null
+        ;;
+        9) echo -e "${YELLOW}Cancelled.${RESET}" ;;
+      esac
+
+      echo ""
+      continue_choice=$(choose_continue) || continue_choice="3"
+
+      case "$continue_choice" in
+        1) continue ;;           # Another action on same packages
+        2) break ;;              # Back to package selection
+        3) exit 0 ;;             # Quit
+      esac
+    done
+  done
+}
+
+main
