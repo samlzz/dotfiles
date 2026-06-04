@@ -10,7 +10,7 @@ fi
 
 case "$ext" in
 	md|markdown)
-		glow -s dark "$1"
+		CLICOLOR_FORCE=1 glow -s dark "$1"
 		exit 0
 		;;
 	json)
@@ -51,7 +51,7 @@ case "$mime" in
 		xxd "$1" | head -50
 		;;
 	text/markdown)
-		glow -s dark "$1"
+		CLICOLOR_FORCE=1 glow -s dark "$1"
 		;;
 	text/csv)
 		column -t -s, "$1" | bat --color=always -l csv
