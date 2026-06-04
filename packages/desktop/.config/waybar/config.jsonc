@@ -72,8 +72,10 @@
 	"custom/idle-inhibitor": {
 		"format": "{}",
 		"exec": "$HOME/.config/waybar/scripts/check-idle.sh",
+		"return-type": "json",
+		"interval": 5,
 		"on-click": "$HOME/.config/waybar/scripts/toggle-idle.sh",
-		"tooltip": false,
+		"tooltip": true,
 		"signal": 10
 	},
 	"power-profiles-daemon": {
