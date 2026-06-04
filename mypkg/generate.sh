@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PACKAGES_DIR="$HOME/dotfiles/packages"
+PACKAGES_DIR="$HOME/dotfiles/mypkg"
 
 mkdir -p "$PACKAGES_DIR"
 

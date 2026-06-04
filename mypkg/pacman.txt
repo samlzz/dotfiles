@@ -29,7 +29,6 @@ catimg
 cava
 ccache
 chafa
-chezmoi
 clang
 cliphist
 cmake
@@ -104,6 +103,7 @@ gnome-text-editor
 gnome-themes-extra
 gnome-tweaks
 gnome-usage
+go
 grex
 gst-libav
 gst-plugin-pipewire
@@ -148,6 +148,7 @@ linux
 linux-firmware
 linux-headers
 llvm
+localsend-bin
 logrotate
 loupe
 lsb-release
