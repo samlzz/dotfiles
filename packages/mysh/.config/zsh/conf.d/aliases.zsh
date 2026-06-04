@@ -26,11 +26,12 @@ alias ccw='gcc -Wall -Wextra -Werror'
 
 alias mk='make'
 alias py='python3'
-alias cm='chezmoi'
+alias dots='~/dotfiles/'
+alias gdots="git -C ~/dotfiles/"
 
 alias e="$EDITOR"
 
-alias sz="source $HOME/.zshenv && source $HOME/.zshrc"
+alias sz="source $HOME/.zshenv && source $XDG_CONFIG_HOME/zsh/.zshrc"
 
 if command -v 'rm_secure' &>/dev/null; then
 	alias rm='rm_secure'
