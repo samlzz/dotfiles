@@ -1,0 +1,28 @@
+timeout = 50
+screen_width = 1920
+screen_height = 1080
+
+# [bottom_right]
+# radius = 10
+# dispatcher = "workspace"
+# args = "e+1"
+# 
+# [bottom_left]
+# radius = 10
+# dispatcher = "workspace"
+# args = "e-1"
+# 
+# [left]
+# distance = 10
+# dispatcher = "workspace"
+# args = "e-1"
+# 
+# [right]
+# distance = 10
+# dispatcher = "workspace"
+# args = "e+1"
+
+[top]
+distance = 10
+dispatcher = "plugin:hytop:justtoggle"
+args = ""
