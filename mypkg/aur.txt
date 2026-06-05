@@ -4,7 +4,6 @@ code-marketplace
 deemix
 deezer-enhanced-bin
 http-parser
-hyprshot-gui-git
 hyprwave
 iwmenu-bin
 localsend-bin

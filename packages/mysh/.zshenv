@@ -7,6 +7,9 @@ export XDG_DATA_HOME="$HOME/.local/share"
 export XDG_STATE_HOME="$HOME/.local/state"
 export XDG_CACHE_HOME="$HOME/.cache"
 
+export XDG_PICTURES_DIR="$HOME/Pictures"
+export XDG_VIDEO_DIR="$HOME/Videos"
+
 ### ─────────────────────────────────────────────────────────────
 ### Force XDG usage
 ### ─────────────────────────────────────────────────────────────

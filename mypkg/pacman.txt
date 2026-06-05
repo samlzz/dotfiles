@@ -124,7 +124,6 @@ hyprland
 hyprlock
 hyprpaper
 hyprpicker
-hyprshot-gui-git
 hyprwave
 impala
 inetutils
@@ -171,6 +170,7 @@ networkmanager-openconnect
 networkmanager-openvpn
 nfs-utils
 nginx
+nlohmann-json
 nmap
 noto-fonts
 noto-fonts-cjk
