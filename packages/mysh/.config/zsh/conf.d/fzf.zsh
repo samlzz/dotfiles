@@ -21,12 +21,13 @@ zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':completion:*:git-checkout:*' sort false
 
 # preview directory's content with eza when completing cd
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:cd:*' fzf-preview \
+    'eza -A --git -1 --follow-symlinks -l --no-filesize --no-permissions --no-user --no-time --color=always --icons=always $realpath'
 
 # give a preview of commandline arguments when completing `kill`
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm -w -w"
 zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-preview \
-  '[[ $group == "[process ID]" ]] && ps --pid=$word -o cmd --no-headers -w -w'
+    '[[ $group == "[process ID]" ]] && ps --pid=$word -o cmd --no-headers -w -w'
 zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-flags --preview-window=down:3:wrap
 
 # systemd units status
@@ -53,14 +54,14 @@ zstyle ':fzf-tab:complete:git-checkout:*' fzf-preview \
 
 # options: show --help of the current command
 zstyle ':fzf-tab:complete:*:options' fzf-preview \
-  '$words[1] --help 2>&1 | bat -plhelp --color=always'
+    '$words[1] --help 2>&1 | bat -plhelp --color=always'
 zstyle ':fzf-tab:complete:*:options' fzf-flags --preview-window=down:6:wrap
 
 # catch-all: file preview
+export LESSOPEN="|$XDG_CONFIG_HOME/less/lessfilter %s"
 zstyle ':fzf-tab:*' fzf-flags '--height=100%'
 zstyle ':fzf-tab:complete:*:*' fzf-preview 'less -R ${(Q)realpath}'
 zstyle ':fzf-tab:complete:*:*' fzf-flags --preview-window=right:'50%':wrap
-export LESSOPEN="|$XDG_CONFIG_HOME/less/lessfilter %s"
 
 # switch group using `<` and `>`
 zstyle ':fzf-tab:*' switch-group '<' '>'

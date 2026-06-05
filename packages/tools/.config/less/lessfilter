@@ -1,12 +1,12 @@
+if [ -d "$1" ]; then
+	eza -A --git -1 --follow-symlinks -l --no-filesize --no-permissions --no-user --no-time --color=always --icons=always "$1"
+	exit 0
+fi
+
 mime=$(file -bL --mime-type "$1")
 category=${mime%%/*}
 kind=${mime##*/}
 ext="${1##*.}"
-
-if [ -d "$1" ]; then
-	eza --git -hl --color=always --icons "$1"
-	exit 0
-fi
 
 case "$ext" in
 	md|markdown)
