@@ -9,4 +9,5 @@ iwmenu-bin
 localsend-bin
 oxker-bin
 python-deezer-py
+tty-clock
 uxplay

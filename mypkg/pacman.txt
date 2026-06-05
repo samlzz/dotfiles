@@ -236,6 +236,7 @@ ttf-dejavu
 ttf-liberation
 ttf-meslo-nerd
 ttf-opensans
+tty-clock
 unrar
 unzip
 upower
