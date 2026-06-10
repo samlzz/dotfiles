@@ -23,6 +23,6 @@ screen_height = 1080
 # args = "e+1"
 
 [top]
-distance = 10
+distance = 1
 dispatcher = "plugin:hytop:justtoggle"
 args = ""
