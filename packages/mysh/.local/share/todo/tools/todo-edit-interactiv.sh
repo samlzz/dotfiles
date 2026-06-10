@@ -15,6 +15,7 @@ declare MODE="select"
 declare EDIT_BUFFER=""
 declare -i EDIT_CURSOR=0
 declare NEXT_INDENT=""
+declare -A MARKED
 
 ##########################
 # ======== Utils ======= #
@@ -93,34 +94,43 @@ draw_screen() {
 
     case "$MODE" in
     select)
-        printf "${ESC}[${IT};${BLACK}m↑↓ navigate  Enter edit  Space toggle  ⌫ delete  q quit${RESET}\n\n"
+        if [[ ${#MARKED[@]} -gt 0 ]]; then
+            printf "${ESC}[${IT};${BLACK}m↑↓ navigate  Enter edit  Space toggle  ⌫ delete ${#MARKED[@]} marked  = mark  q quit${RESET}\n\n"
+        else
+            printf "${ESC}[${IT};${BLACK}m↑↓ navigate  Enter edit  Space toggle  ⌫ delete  = mark  q quit${RESET}\n\n"
+        fi
         ;;
     edit)
         printf "${ESC}[${IT};${BLACK}mEnter confirm  Esc cancel  Tab indent  Shift+Tab unindent  ←→ cursor${RESET}\n\n"
         ;;
     confirm_delete)
-        printf "${ESC}[${IT};${BLACK}mDelete this item? y to confirm, any other key to cancel${RESET}\n\n"
+        local del_count=$(( ${#MARKED[@]} > 0 ? ${#MARKED[@]} : 1 ))
+        printf "${ESC}[${IT};${BLACK}mDelete %d item(s)? y to confirm, any other key to cancel${RESET}\n\n" "$del_count"
         ;;
     esac
 
     local i
     for ((i = 0; i < total; i++)); do
         local line="${RAW_LINES[$i]}"
+        local mark_pfx="  "
+        [[ -n "${MARKED[$i]+x}" ]] && mark_pfx="${ESC}[1;31m█${RESET} "
         if [[ $i -eq $SELECTED ]]; then
             case "$MODE" in
             select)
-                printf "${ESC}[7m> %s${RESET}\n" "$line"
+                printf "%s${ESC}[7m> %s${RESET}\n" "$mark_pfx" "$line"
                 ;;
             edit)
+                printf "%s" "$mark_pfx"
                 render_edit_line
                 printf "\n"
                 ;;
             confirm_delete)
-                printf "${ESC}[7m> %s  Delete? [y/N]${RESET}\n" "$line"
+                local _dc=$(( ${#MARKED[@]} > 0 ? ${#MARKED[@]} : 1 ))
+                printf "%s${ESC}[7m> %s  Delete %d item(s)? [y/N]${RESET}\n" "$mark_pfx" "$line" "$_dc"
                 ;;
             esac
         else
-            printf "  %s\n" "$line"
+            printf "%s%s\n" "$mark_pfx" "$line"
         fi
     done
 
@@ -182,9 +192,16 @@ confirm_edit() {
 delete_selected() {
     local total="${#RAW_LINES[@]}"
     local new_lines=() i
-    for ((i = 0; i < total; i++)); do
-        [[ $i -ne $SELECTED ]] && new_lines+=("${RAW_LINES[$i]}")
-    done
+    if [[ ${#MARKED[@]} -gt 0 ]]; then
+        for ((i = 0; i < total; i++)); do
+            [[ -z "${MARKED[$i]+x}" ]] && new_lines+=("${RAW_LINES[$i]}")
+        done
+        MARKED=()
+    else
+        for ((i = 0; i < total; i++)); do
+            [[ $i -ne $SELECTED ]] && new_lines+=("${RAW_LINES[$i]}")
+        done
+    fi
     if [[ ${#new_lines[@]} -gt 0 ]]; then
         RAW_LINES=("${new_lines[@]}")
     else
@@ -197,6 +214,16 @@ delete_selected() {
         SELECTED=$((new_total - 1))
     fi
     MODE="select"
+}
+
+toggle_mark() {
+    local total="${#RAW_LINES[@]}"
+    [[ $SELECTED -ge $total ]] && return
+    if [[ -n "${MARKED[$SELECTED]+x}" ]]; then
+        unset 'MARKED[$SELECTED]'
+    else
+        MARKED[$SELECTED]=1
+    fi
 }
 
 quit_and_save() {
@@ -246,7 +273,14 @@ handle_select_key() {
     case "$c" in
     "") enter_edit_mode ;;
     " ") [[ $SELECTED -lt $total ]] && toggle_checkbox_line "$SELECTED" RAW_LINES ;;
-    $'\x7f') [[ $SELECTED -lt $total ]] && MODE="confirm_delete" ;;
+    $'\x7f')
+        if [[ ${#MARKED[@]} -gt 0 ]]; then
+            MODE="confirm_delete"
+        else
+            [[ $SELECTED -lt $total ]] && MODE="confirm_delete"
+        fi
+        ;;
+    "=") toggle_mark ;;
     "q" | "Q") quit_and_save ;;
     esac
 }
