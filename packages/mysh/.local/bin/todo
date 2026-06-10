@@ -417,11 +417,12 @@ Options for add:
 
 Examples:
   todo create project
-  todo add "Finish report"
-  todo add -d project
+  todo add project
+  todo add -m
+  todo add -d -m project
   todo display project
   todo ls
-  EDITOR=vim todo edit my_tasks
+  EDITOR=vim todo edit
   todo delete project
 EOF
 }
@@ -442,10 +443,9 @@ handle_no_todo_file_cmds() {
     list_todo_files
     ;;
   *)
-    return
+    return 1
     ;;
   esac
-  printf "done\n"
 }
 
 handle_commands() {
@@ -454,7 +454,7 @@ handle_commands() {
   local args="$@"
   local todo_file
 
-  if [[ $(handle_no_todo_file_cmds "$cmd" $args) == "done" ]]; then
+  if handle_no_todo_file_cmds "$cmd" $args; then
     return 0
   fi
 
