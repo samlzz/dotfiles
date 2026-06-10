@@ -21,6 +21,9 @@ YELLOW="33"
 BLUE="34"
 BLACK="30"
 
+INTERACTIV_EDIT_CMD="$XDG_DATA_HOME/todo/tools/todo-edit-interactiv.sh"
+INTERACTIV_LIST_CMD="$XDG_DATA_HOME/todo/tools/todo-list-interactiv.sh"
+
 ##########################
 # ======== Utils ======= #
 ##########################
@@ -403,8 +406,8 @@ add_todo_entry() {
 edit_todo_file() {
     local todo_file="$1"
 
-    if [[ -t 1 ]] && command -v todo-edit-interactiv >/dev/null 2>&1; then
-        if ! todo-edit-interactiv "$todo_file"; then
+    if [[ -t 1 ]] && command -v "$INTERACTIV_EDIT_CMD" >/dev/null 2>&1; then
+        if ! "$INTERACTIV_EDIT_CMD" "$todo_file"; then
             printf "Error: Failed to edit '%s'.\n" "$todo_file" >&2
             return 1
         fi
@@ -562,12 +565,12 @@ auto_behavior() {
     fi
 
     if [[ -t 1 ]]; then # ? If stdout is TTY
-        if ! command -v todo-list-interactiv >/dev/null 2>&1; then
+        if ! command -v "$INTERACTIV_LIST_CMD" >/dev/null 2>&1; then
             printf "Error: sub-command 'todo-list-interactiv' not found.\n" >&2
             return 1
         fi
         for todo_file in "${todo_files[@]}"; do
-            todo-list-interactiv "$todo_file"
+            "$INTERACTIV_LIST_CMD" "$todo_file"
         done
     else
         for todo_file in "${todo_files[@]}"; do
