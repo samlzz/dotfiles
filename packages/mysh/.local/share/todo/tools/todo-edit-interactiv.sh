@@ -14,6 +14,7 @@ declare MODE="select"
 
 declare EDIT_BUFFER=""
 declare -i EDIT_CURSOR=0
+declare NEXT_INDENT=""
 
 ##########################
 # ======== Utils ======= #
@@ -131,11 +132,11 @@ draw_screen() {
             printf "\n"
             ;;
         *)
-            printf "${ESC}[7m> [ ] ${RESET}\n"
+            printf "${ESC}[7m> %s[ ] ${RESET}\n" "$NEXT_INDENT"
             ;;
         esac
     else
-        printf "${ESC}[${IT};${BLACK}m  [ ] ${RESET}\n"
+        printf "${ESC}[${IT};${BLACK}m  %s[ ] ${RESET}\n" "$NEXT_INDENT"
     fi
 }
 
@@ -152,8 +153,8 @@ redraw_edit_line() {
 enter_edit_mode() {
     local total="${#RAW_LINES[@]}"
     if [[ $SELECTED -eq $total ]]; then
-        EDIT_BUFFER="[ ] "
-        EDIT_CURSOR=4
+        EDIT_BUFFER="${NEXT_INDENT}[ ] "
+        EDIT_CURSOR="${#EDIT_BUFFER}"
     else
         EDIT_BUFFER="${RAW_LINES[$SELECTED]}"
         EDIT_CURSOR="${#EDIT_BUFFER}"
@@ -165,9 +166,16 @@ confirm_edit() {
     local total="${#RAW_LINES[@]}"
     if [[ $SELECTED -eq $total ]]; then
         RAW_LINES+=("$EDIT_BUFFER")
+        [[ "$EDIT_BUFFER" =~ ^([[:space:]]*) ]] && NEXT_INDENT="${BASH_REMATCH[1]}"
     else
         RAW_LINES[$SELECTED]="$EDIT_BUFFER"
+        if [[ $SELECTED -eq $((total - 1)) ]]; then
+            [[ "$EDIT_BUFFER" =~ ^([[:space:]]*) ]] && NEXT_INDENT="${BASH_REMATCH[1]}"
+        else
+            NEXT_INDENT=""
+        fi
     fi
+    ((SELECTED++))
     MODE="select"
 }
 
