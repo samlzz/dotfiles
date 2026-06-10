@@ -202,19 +202,34 @@ quit_and_save() {
 # ==== Key handlers ===== #
 ##########################
 
+move_word_forward() {
+    local buf_len="${#EDIT_BUFFER}"
+    while [[ $EDIT_CURSOR -lt $buf_len && "${EDIT_BUFFER:$EDIT_CURSOR:1}" == " " ]]; do
+        ((EDIT_CURSOR++))
+    done
+    while [[ $EDIT_CURSOR -lt $buf_len && "${EDIT_BUFFER:$EDIT_CURSOR:1}" != " " ]]; do
+        ((EDIT_CURSOR++))
+    done
+}
+
+move_word_backward() {
+    while [[ $EDIT_CURSOR -gt 0 && "${EDIT_BUFFER:$((EDIT_CURSOR - 1)):1}" == " " ]]; do
+        ((EDIT_CURSOR--))
+    done
+    while [[ $EDIT_CURSOR -gt 0 && "${EDIT_BUFFER:$((EDIT_CURSOR - 1)):1}" != " " ]]; do
+        ((EDIT_CURSOR--))
+    done
+}
+
 handle_select_key() {
-    local c="$1" c2="$2" c3="$3"
+    local c="$1" seq="$2"
     local total="${#RAW_LINES[@]}"
     local nav_size=$((total + 1))
 
     if [[ "$c" == $'\x1b' ]]; then
-        case "$c2" in
-        "[")
-            case "$c3" in
-            "A") SELECTED=$(((SELECTED - 1 + nav_size) % nav_size)) ;;
-            "B") SELECTED=$(((SELECTED + 1) % nav_size)) ;;
-            esac
-            ;;
+        case "$seq" in
+        "[A") SELECTED=$(((SELECTED - 1 + nav_size) % nav_size)) ;;
+        "[B") SELECTED=$(((SELECTED + 1) % nav_size)) ;;
         "") quit_and_save ;;
         esac
         return
@@ -229,36 +244,28 @@ handle_select_key() {
 }
 
 handle_edit_key() {
-    local c="$1" c2="$2" c3="$3" c4="$4"
+    local c="$1" seq="$2"
     local buf_len="${#EDIT_BUFFER}"
 
     if [[ "$c" == $'\x1b' ]]; then
-        case "$c2" in
-        "[")
-            case "$c3" in
-            "C") [[ $EDIT_CURSOR -lt $buf_len ]] && ((EDIT_CURSOR++)) ;;
-            "D") [[ $EDIT_CURSOR -gt 0 ]] && ((EDIT_CURSOR--)) ;;
-            "H") EDIT_CURSOR=0 ;;
-            "F") EDIT_CURSOR=$buf_len ;;
-            "Z")
-                if [[ "${EDIT_BUFFER:0:4}" == "    " ]]; then
-                    EDIT_BUFFER="${EDIT_BUFFER:4}"
-                    EDIT_CURSOR=$((EDIT_CURSOR >= 4 ? EDIT_CURSOR - 4 : 0))
-                fi
-                ;;
-            "3")
-                if [[ "$c4" == "~" && $EDIT_CURSOR -lt $buf_len ]]; then
-                    EDIT_BUFFER="${EDIT_BUFFER:0:$EDIT_CURSOR}${EDIT_BUFFER:$((EDIT_CURSOR + 1))}"
-                fi
-                ;;
-            esac
+        case "$seq" in
+        "[C") [[ $EDIT_CURSOR -lt $buf_len ]] && ((EDIT_CURSOR++)) ;;
+        "[D") [[ $EDIT_CURSOR -gt 0 ]] && ((EDIT_CURSOR--)) ;;
+        "[H" | "OH") EDIT_CURSOR=0 ;;
+        "[F" | "OF") EDIT_CURSOR=$buf_len ;;
+        "[Z")
+            if [[ "${EDIT_BUFFER:0:4}" == "    " ]]; then
+                EDIT_BUFFER="${EDIT_BUFFER:4}"
+                EDIT_CURSOR=$((EDIT_CURSOR >= 4 ? EDIT_CURSOR - 4 : 0))
+            fi
             ;;
-        "O")
-            case "$c3" in
-            "H") EDIT_CURSOR=0 ;;
-            "F") EDIT_CURSOR=$buf_len ;;
-            esac
+        "[3~")
+            if [[ $EDIT_CURSOR -lt $buf_len ]]; then
+                EDIT_BUFFER="${EDIT_BUFFER:0:$EDIT_CURSOR}${EDIT_BUFFER:$((EDIT_CURSOR + 1))}"
+            fi
             ;;
+        "[1;5C" | "[5C") move_word_forward ;;
+        "[1;5D" | "[5D") move_word_backward ;;
         "") MODE="select" ;;
         esac
         return
@@ -294,22 +301,27 @@ handle_confirm_delete_key() {
 }
 
 read_key() {
-    local c="" c2="" c3="" c4=""
+    local c="" seq="" ch=""
     IFS= read -rsn1 c
 
     if [[ "$c" == $'\x1b' ]]; then
-        IFS= read -rsn1 -t 0.01 c2
-        if [[ "$c2" == "[" || "$c2" == "O" ]]; then
-            IFS= read -rsn1 -t 0.01 c3
-            if [[ "$c3" == "3" ]]; then
-                IFS= read -rsn1 -t 0.01 c4
+        IFS= read -rsn1 -t 0.01 ch
+        if [[ -n "$ch" ]]; then
+            seq="$ch"
+            if [[ "$ch" == "[" || "$ch" == "O" ]]; then
+                while true; do
+                    IFS= read -rsn1 -t 0.01 ch
+                    [[ -z "$ch" ]] && break
+                    seq+="$ch"
+                    [[ "$ch" =~ [A-Za-z~] ]] && break
+                done
             fi
         fi
     fi
 
     case "$MODE" in
-    select) handle_select_key "$c" "$c2" "$c3" ;;
-    edit) handle_edit_key "$c" "$c2" "$c3" "$c4" ;;
+    select)         handle_select_key "$c" "$seq" ;;
+    edit)           handle_edit_key "$c" "$seq" ;;
     confirm_delete) handle_confirm_delete_key "$c" ;;
     esac
 }
