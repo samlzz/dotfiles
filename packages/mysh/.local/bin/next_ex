@@ -8,123 +8,123 @@ SRC_DIR="./src"
 declare -a EXCLUDE_LIST=()
 
 validate_current_directory() {
-  local dir_name
-  dir_name=$(basename "$CURRENT_DIR")
+    local dir_name
+    dir_name=$(basename "$CURRENT_DIR")
 
-  if [[ ! "$dir_name" =~ ^ex0([0-9])$ ]]; then
-    printf "Error: Current directory must be named ex0<[0-9]>\n" >&2
-    return 1
-  fi
-  if [[ ! -d "$SRC_DIR" ]]; then
-    printf "Error: src directory not found.\n" >&2
-    return 1
-  fi
+    if [[ ! "$dir_name" =~ ^ex0([0-9])$ ]]; then
+        printf "Error: Current directory must be named ex0<[0-9]>\n" >&2
+        return 1
+    fi
+    if [[ ! -d "$SRC_DIR" ]]; then
+        printf "Error: src directory not found.\n" >&2
+        return 1
+    fi
 
-  CURR_NB="${BASH_REMATCH[1]}"
-  return 0
+    CURR_NB="${BASH_REMATCH[1]}"
+    return 0
 }
 
 compute_next_directory() {
-  local next_nb
-  next_nb=$((CURR_NB + 1))
-  NEXT_DIR="../ex0${next_nb}/src"
-  return 0
+    local next_nb
+    next_nb=$((CURR_NB + 1))
+    NEXT_DIR="../ex0${next_nb}/src"
+    return 0
 }
 
 create_next_directory() {
-  mkdir -p "$NEXT_DIR" || {
-    printf "Error: Failed to create target directory: %s\n" "$NEXT_DIR" >&2
-    return 1
-  }
+    mkdir -p "$NEXT_DIR" || {
+        printf "Error: Failed to create target directory: %s\n" "$NEXT_DIR" >&2
+        return 1
+    }
 }
 
 is_excluded() {
-  local item="$1"
-  local name
-  name=$(basename "$item")
+    local item="$1"
+    local name
+    name=$(basename "$item")
 
-  for excluded in "${EXCLUDE_LIST[@]}"; do
-    if [[ "$name" == "$excluded" ]]; then
-      return 0
-    fi
-  done
+    for excluded in "${EXCLUDE_LIST[@]}"; do
+        if [[ "$name" == "$excluded" ]]; then
+            return 0
+        fi
+    done
 
-  return 1
+    return 1
 }
 
 copy_unique_items_to_next() {
-  local src_path dest_path rel_path
-  local -i copied=0
+    local src_path dest_path rel_path
+    local -i copied=0
 
-  shopt -s dotglob nullglob
-  for src_path in "$SRC_DIR"/* "$SRC_DIR"/.*; do
-    if [[ "$(basename "$src_path")" =~ ^\.\.?$ ]] || is_excluded "$src_path"; then
-      continue
-    fi
+    shopt -s dotglob nullglob
+    for src_path in "$SRC_DIR"/* "$SRC_DIR"/.*; do
+        if [[ "$(basename "$src_path")" =~ ^\.\.?$ ]] || is_excluded "$src_path"; then
+            continue
+        fi
 
-    rel_path="${src_path#"$SRC_DIR"/}"
-    dest_path="$NEXT_DIR/$rel_path"
+        rel_path="${src_path#"$SRC_DIR"/}"
+        dest_path="$NEXT_DIR/$rel_path"
 
-    if [[ -e "$dest_path" ]]; then
-      continue
-    fi
+        if [[ -e "$dest_path" ]]; then
+            continue
+        fi
 
-    if [[ -d "$src_path" ]]; then
-      cp -r "$src_path" "$dest_path" || {
-        printf "Error: Failed to copy directory: %s -> %s\n" "$src_path" "$dest_path" >&2
-        continue
-      }
-    else
-      cp -p "$src_path" "$dest_path" || {
-        printf "Error: Failed to copy file: %s -> %s\n" "$src_path" "$dest_path" >&2
-        continue
-      }
-    fi
-    ((copied++))
-  done
-  shopt -u dotglob nullglob
+        if [[ -d "$src_path" ]]; then
+            cp -r "$src_path" "$dest_path" || {
+                printf "Error: Failed to copy directory: %s -> %s\n" "$src_path" "$dest_path" >&2
+                continue
+            }
+        else
+            cp -p "$src_path" "$dest_path" || {
+                printf "Error: Failed to copy file: %s -> %s\n" "$src_path" "$dest_path" >&2
+                continue
+            }
+        fi
+        ((copied++))
+    done
+    shopt -u dotglob nullglob
 
-  printf "Copied %d new items to %s.\n" "$copied" "$NEXT_DIR"
+    printf "Copied %d new items to %s.\n" "$copied" "$NEXT_DIR"
 }
 
 change_directory() {
-  cd "$NEXT_DIR" || {
-    printf "Error: Failed to change to directory: %s\n" "$NEXT_DIR" >&2
-    return 1
-  }
+    cd "$NEXT_DIR" || {
+        printf "Error: Failed to change to directory: %s\n" "$NEXT_DIR" >&2
+        return 1
+    }
 }
 
 parse_arguments() {
-  local arg
+    local arg
 
-  while [[ $# -gt 0 ]]; do
-    arg="$1"
-    case "$arg" in
-    -e | --exclude)
-      shift
-      while [[ $# -gt 0 && "$1" != -* ]]; do
-        EXCLUDE_LIST+=("$(basename "$1")")
-        shift
-      done
-      ;;
-    -*)
-      printf "Error: Unknown option: %s\n" "$arg" >&2
-      return 1
-      ;;
-    *)
-      printf "Error: Unexpected argument: %s\n" "$arg" >&2
-      return 1
-      ;;
-    esac
-  done
+    while [[ $# -gt 0 ]]; do
+        arg="$1"
+        case "$arg" in
+        -e | --exclude)
+            shift
+            while [[ $# -gt 0 && "$1" != -* ]]; do
+                EXCLUDE_LIST+=("$(basename "$1")")
+                shift
+            done
+            ;;
+        -*)
+            printf "Error: Unknown option: %s\n" "$arg" >&2
+            return 1
+            ;;
+        *)
+            printf "Error: Unexpected argument: %s\n" "$arg" >&2
+            return 1
+            ;;
+        esac
+    done
 }
 main() {
-  parse_arguments "$@" || return 1
-  validate_current_directory || return 1
-  compute_next_directory || return 1
-  create_next_directory || return 1
-  copy_unique_items_to_next || return 1
-  change_directory || return 1
+    parse_arguments "$@" || return 1
+    validate_current_directory || return 1
+    compute_next_directory || return 1
+    create_next_directory || return 1
+    copy_unique_items_to_next || return 1
+    change_directory || return 1
 }
 
 main "$@"

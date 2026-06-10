@@ -11,23 +11,23 @@ TMP_DIR=""
 DIRECTORY_BUILD_PROPS_PATH=""
 
 PROJECT_SUFFIXES=(
-	"Domain"
-	"Application"
-	"Infrastructure"
-	"Persistence"
-	"Presentation"
+    "Domain"
+    "Application"
+    "Infrastructure"
+    "Persistence"
+    "Presentation"
 )
 
 MARKER_PREFIXES=(
-	"Domain:IDomainAssemblyMarker"
-	"Application:IApplicationAssemblyMarker"
-	"Infrastructure:IInfrastructureAssemblyMarker"
-	"Persistence:IPersistenceAssemblyMarker"
-	"Presentation:IPresentationAssemblyMarker"
+    "Domain:IDomainAssemblyMarker"
+    "Application:IApplicationAssemblyMarker"
+    "Infrastructure:IInfrastructureAssemblyMarker"
+    "Persistence:IPersistenceAssemblyMarker"
+    "Presentation:IPresentationAssemblyMarker"
 )
 
 usage() {
-	cat <<'EOF'
+    cat <<'EOF'
 Usage:
   ensure-service-structure.sh [--check] [target_directory]
 
@@ -42,178 +42,178 @@ EOF
 }
 
 log_info() {
-	local message
-	message="$1"
-	printf '[INFO] %s\n' "$message"
+    local message
+    message="$1"
+    printf '[INFO] %s\n' "$message"
 }
 
 log_warn() {
-	local message
-	message="$1"
-	printf '[WARN] %s\n' "$message" >&2
+    local message
+    message="$1"
+    printf '[WARN] %s\n' "$message" >&2
 }
 
 log_error() {
-	local message
-	message="$1"
-	printf '[ERROR] %s\n' "$message" >&2
+    local message
+    message="$1"
+    printf '[ERROR] %s\n' "$message" >&2
 }
 
 cleanup() {
-	if [[ -n "${TMP_DIR:-}" && -d "${TMP_DIR:-}" ]]; then
-		rm -rf -- "$TMP_DIR"
-	fi
+    if [[ -n "${TMP_DIR:-}" && -d "${TMP_DIR:-}" ]]; then
+        rm -rf -- "$TMP_DIR"
+    fi
 }
 
 setup_signal_handlers() {
-	trap cleanup EXIT
-	trap 'printf "[ERROR] Interrupted.\n" >&2; return 130 2>/dev/null || exit 130' INT TERM
+    trap cleanup EXIT
+    trap 'printf "[ERROR] Interrupted.\n" >&2; return 130 2>/dev/null || exit 130' INT TERM
 }
 
 sanitize_single_line() {
-	local input
-	input="$1"
-	printf '%s' "$input" | sed 's/^[[:space:]]\+//; s/[[:space:]]\+$//'
+    local input
+    input="$1"
+    printf '%s' "$input" | sed 's/^[[:space:]]\+//; s/[[:space:]]\+$//'
 }
 
 validate_mode() {
-	case "$MODE" in
-	write | check) ;;
-	*)
-		log_error "Invalid mode: $MODE"
-		return 1
-		;;
-	esac
+    case "$MODE" in
+    write | check) ;;
+    *)
+        log_error "Invalid mode: $MODE"
+        return 1
+        ;;
+    esac
 }
 
 validate_target_dir_argument() {
-	local input
-	input="$1"
+    local input
+    input="$1"
 
-	if [[ -z "$input" || "$input" =~ ^[[:space:]]+$ ]]; then
-		log_error "Target directory cannot be empty."
-		return 1
-	fi
+    if [[ -z "$input" || "$input" =~ ^[[:space:]]+$ ]]; then
+        log_error "Target directory cannot be empty."
+        return 1
+    fi
 }
 
 parse_arguments() {
-	local positional_count
-	positional_count=0
+    local positional_count
+    positional_count=0
 
-	while (($# > 0)); do
-		case "$1" in
-		--check)
-			MODE="check"
-			shift
-			;;
-		-h | --help)
-			usage
-			return 2
-			;;
-		--)
-			shift
-			while (($# > 0)); do
-				positional_count=$((positional_count + 1))
-				if ((positional_count > 1)); then
-					log_error "Only one target directory is allowed."
-					return 1
-				fi
-				TARGET_DIR="$1"
-				shift
-			done
-			;;
-		-*)
-			log_error "Unknown option: $1"
-			return 1
-			;;
-		*)
-			positional_count=$((positional_count + 1))
-			if ((positional_count > 1)); then
-				log_error "Only one target directory is allowed."
-				return 1
-			fi
-			TARGET_DIR="$1"
-			shift
-			;;
-		esac
-	done
+    while (($# > 0)); do
+        case "$1" in
+        --check)
+            MODE="check"
+            shift
+            ;;
+        -h | --help)
+            usage
+            return 2
+            ;;
+        --)
+            shift
+            while (($# > 0)); do
+                positional_count=$((positional_count + 1))
+                if ((positional_count > 1)); then
+                    log_error "Only one target directory is allowed."
+                    return 1
+                fi
+                TARGET_DIR="$1"
+                shift
+            done
+            ;;
+        -*)
+            log_error "Unknown option: $1"
+            return 1
+            ;;
+        *)
+            positional_count=$((positional_count + 1))
+            if ((positional_count > 1)); then
+                log_error "Only one target directory is allowed."
+                return 1
+            fi
+            TARGET_DIR="$1"
+            shift
+            ;;
+        esac
+    done
 
-	if ! validate_mode; then
-		return 1
-	fi
+    if ! validate_mode; then
+        return 1
+    fi
 
-	TARGET_DIR=$(sanitize_single_line "$TARGET_DIR")
-	if [[ -z "$TARGET_DIR" ]]; then
-		TARGET_DIR="."
-	fi
+    TARGET_DIR=$(sanitize_single_line "$TARGET_DIR")
+    if [[ -z "$TARGET_DIR" ]]; then
+        TARGET_DIR="."
+    fi
 
-	if ! validate_target_dir_argument "$TARGET_DIR"; then
-		return 1
-	fi
+    if ! validate_target_dir_argument "$TARGET_DIR"; then
+        return 1
+    fi
 }
 
 ensure_tmp_dir() {
-	if [[ -n "${TMP_DIR:-}" && -d "${TMP_DIR:-}" ]]; then
-		return 0
-	fi
+    if [[ -n "${TMP_DIR:-}" && -d "${TMP_DIR:-}" ]]; then
+        return 0
+    fi
 
-	if ! TMP_DIR=$(mktemp -d 2>/dev/null); then
-		log_error "Failed to create temporary directory."
-		return 1
-	fi
+    if ! TMP_DIR=$(mktemp -d 2>/dev/null); then
+        log_error "Failed to create temporary directory."
+        return 1
+    fi
 
-	if [[ -z "$TMP_DIR" || ! -d "$TMP_DIR" ]]; then
-		log_error "Temporary directory is invalid."
-		return 1
-	fi
+    if [[ -z "$TMP_DIR" || ! -d "$TMP_DIR" ]]; then
+        log_error "Temporary directory is invalid."
+        return 1
+    fi
 }
 
 resolve_target_directory() {
-	local resolved
-	resolved=""
+    local resolved
+    resolved=""
 
-	if [[ "$MODE" == "check" ]]; then
-		if [[ ! -d "$TARGET_DIR" ]]; then
-			log_error "Target directory does not exist: $TARGET_DIR"
-			return 1
-		fi
-	else
-		if ! mkdir -p -- "$TARGET_DIR"; then
-			log_error "Failed to create target directory: $TARGET_DIR"
-			return 1
-		fi
-	fi
+    if [[ "$MODE" == "check" ]]; then
+        if [[ ! -d "$TARGET_DIR" ]]; then
+            log_error "Target directory does not exist: $TARGET_DIR"
+            return 1
+        fi
+    else
+        if ! mkdir -p -- "$TARGET_DIR"; then
+            log_error "Failed to create target directory: $TARGET_DIR"
+            return 1
+        fi
+    fi
 
-	if ! resolved=$(cd -- "$TARGET_DIR" && pwd -P); then
-		log_error "Failed to resolve target directory: $TARGET_DIR"
-		return 1
-	fi
+    if ! resolved=$(cd -- "$TARGET_DIR" && pwd -P); then
+        log_error "Failed to resolve target directory: $TARGET_DIR"
+        return 1
+    fi
 
-	resolved=$(sanitize_single_line "$resolved")
-	if [[ -z "$resolved" || ! -d "$resolved" ]]; then
-		log_error "Resolved target directory is invalid."
-		return 1
-	fi
+    resolved=$(sanitize_single_line "$resolved")
+    if [[ -z "$resolved" || ! -d "$resolved" ]]; then
+        log_error "Resolved target directory is invalid."
+        return 1
+    fi
 
-	ABS_TARGET_DIR="$resolved"
-	SRC_DIR="$ABS_TARGET_DIR/src"
-	DIRECTORY_BUILD_PROPS_PATH="$ABS_TARGET_DIR/Directory.Build.props"
+    ABS_TARGET_DIR="$resolved"
+    SRC_DIR="$ABS_TARGET_DIR/src"
+    DIRECTORY_BUILD_PROPS_PATH="$ABS_TARGET_DIR/Directory.Build.props"
 }
 
 to_pascal_case() {
-	local input
-	local output
+    local input
+    local output
 
-	input="$1"
-	input=$(sanitize_single_line "$input")
+    input="$1"
+    input=$(sanitize_single_line "$input")
 
-	if [[ -z "$input" ]]; then
-		printf '\n'
-		return 0
-	fi
+    if [[ -z "$input" ]]; then
+        printf '\n'
+        return 0
+    fi
 
-	if ! output=$(
-		awk '
+    if ! output=$(
+        awk '
       BEGIN { FS="[^[:alnum:]]+"; OFS="" }
       {
         for (i = 1; i <= NF; i++) {
@@ -229,119 +229,119 @@ to_pascal_case() {
         printf "\n"
       }
     ' <<<"$input"
-	); then
-		log_error "Failed to convert input to PascalCase."
-		return 1
-	fi
+    ); then
+        log_error "Failed to convert input to PascalCase."
+        return 1
+    fi
 
-	output=$(sanitize_single_line "$output")
-	printf '%s\n' "$output"
+    output=$(sanitize_single_line "$output")
+    printf '%s\n' "$output"
 }
 
 derive_service_name() {
-	local dir_name
-	local service_name
+    local dir_name
+    local service_name
 
-	dir_name=$(basename -- "$ABS_TARGET_DIR")
-	dir_name=$(sanitize_single_line "$dir_name")
+    dir_name=$(basename -- "$ABS_TARGET_DIR")
+    dir_name=$(sanitize_single_line "$dir_name")
 
-	if [[ -z "$dir_name" ]]; then
-		log_error "Failed to derive directory name from target directory."
-		return 1
-	fi
+    if [[ -z "$dir_name" ]]; then
+        log_error "Failed to derive directory name from target directory."
+        return 1
+    fi
 
-	if ! service_name=$(to_pascal_case "$dir_name"); then
-		return 1
-	fi
+    if ! service_name=$(to_pascal_case "$dir_name"); then
+        return 1
+    fi
 
-	service_name=$(sanitize_single_line "$service_name")
-	if [[ -z "$service_name" ]]; then
-		log_error "Unable to derive service name from directory: $ABS_TARGET_DIR"
-		return 1
-	fi
+    service_name=$(sanitize_single_line "$service_name")
+    if [[ -z "$service_name" ]]; then
+        log_error "Unable to derive service name from directory: $ABS_TARGET_DIR"
+        return 1
+    fi
 
-	if [[ ! "$service_name" =~ ^[[:alpha:]_][[:alnum:]_]*$ ]]; then
-		log_error "Derived service name is not a valid namespace identifier: $service_name"
-		return 1
-	fi
+    if [[ ! "$service_name" =~ ^[[:alpha:]_][[:alnum:]_]*$ ]]; then
+        log_error "Derived service name is not a valid namespace identifier: $service_name"
+        return 1
+    fi
 
-	SERVICE_NAME="$service_name"
+    SERVICE_NAME="$service_name"
 }
 
 project_name() {
-	local suffix
-	suffix="$1"
-	printf '%s.%s\n' "$SERVICE_NAME" "$suffix"
+    local suffix
+    suffix="$1"
+    printf '%s.%s\n' "$SERVICE_NAME" "$suffix"
 }
 
 project_directory() {
-	local suffix
-	local project
-	suffix="$1"
-	project=$(project_name "$suffix")
-	printf '%s/%s\n' "$SRC_DIR" "$project"
+    local suffix
+    local project
+    suffix="$1"
+    project=$(project_name "$suffix")
+    printf '%s/%s\n' "$SRC_DIR" "$project"
 }
 
 project_file_path() {
-	local suffix="$1"
-	local project
-	project=$(project_name "$suffix")
-	printf '%s/%s/%s.csproj\n' "$SRC_DIR" "$project" "$project"
+    local suffix="$1"
+    local project
+    project=$(project_name "$suffix")
+    printf '%s/%s/%s.csproj\n' "$SRC_DIR" "$project" "$project"
 }
 
 project_dependencies() {
-	local suffix
-	suffix="$1"
+    local suffix
+    suffix="$1"
 
-	case "$suffix" in
-	Domain) ;;
-	Application)
-		printf '%s\n' "$(project_name "Domain")"
-		;;
-	Infrastructure)
-		printf '%s\n' "$(project_name "Application")"
-		printf '%s\n' "$(project_name "Domain")"
-		;;
-	Persistence)
-		printf '%s\n' "$(project_name "Application")"
-		printf '%s\n' "$(project_name "Domain")"
-		;;
-	Presentation)
-		printf '%s\n' "$(project_name "Application")"
-		;;
-	*)
-		log_error "Unknown project suffix: $suffix"
-		return 1
-		;;
-	esac
+    case "$suffix" in
+    Domain) ;;
+    Application)
+        printf '%s\n' "$(project_name "Domain")"
+        ;;
+    Infrastructure)
+        printf '%s\n' "$(project_name "Application")"
+        printf '%s\n' "$(project_name "Domain")"
+        ;;
+    Persistence)
+        printf '%s\n' "$(project_name "Application")"
+        printf '%s\n' "$(project_name "Domain")"
+        ;;
+    Presentation)
+        printf '%s\n' "$(project_name "Application")"
+        ;;
+    *)
+        log_error "Unknown project suffix: $suffix"
+        return 1
+        ;;
+    esac
 }
 
 ensure_directory() {
-	local dir
-	dir="$1"
-	dir=$(sanitize_single_line "$dir")
+    local dir
+    dir="$1"
+    dir=$(sanitize_single_line "$dir")
 
-	if [[ -z "$dir" ]]; then
-		log_error "Directory path cannot be empty."
-		return 1
-	fi
+    if [[ -z "$dir" ]]; then
+        log_error "Directory path cannot be empty."
+        return 1
+    fi
 
-	if [[ "$MODE" == "check" ]]; then
-		if [[ ! -d "$dir" ]]; then
-			log_error "Missing directory: $dir"
-			return 1
-		fi
-		return 0
-	fi
+    if [[ "$MODE" == "check" ]]; then
+        if [[ ! -d "$dir" ]]; then
+            log_error "Missing directory: $dir"
+            return 1
+        fi
+        return 0
+    fi
 
-	if ! mkdir -p -- "$dir"; then
-		log_error "Failed to create directory: $dir"
-		return 1
-	fi
+    if ! mkdir -p -- "$dir"; then
+        log_error "Failed to create directory: $dir"
+        return 1
+    fi
 }
 
 directory_build_props_content() {
-	cat <<'EOF'
+    cat <<'EOF'
 <Project>
 
     <PropertyGroup>
@@ -353,49 +353,49 @@ EOF
 }
 
 csproj_content() {
-	local root_namespace
-	local refs
-	local ref
-	local ref_count
+    local root_namespace
+    local refs
+    local ref
+    local ref_count
 
-	root_namespace="$1"
-	shift || true
+    root_namespace="$1"
+    shift || true
 
-	refs=("$@")
-	ref_count=${#refs[@]}
+    refs=("$@")
+    ref_count=${#refs[@]}
 
-	printf '<Project Sdk="Microsoft.NET.Sdk">\n\n'
+    printf '<Project Sdk="Microsoft.NET.Sdk">\n\n'
 
-	if ((ref_count > 0)); then
-		printf '    <ItemGroup>\n'
-		for ref in "${refs[@]}"; do
-			ref=$(sanitize_single_line "$ref")
-			if [[ -z "$ref" ]]; then
-				log_error "Invalid project reference."
-				return 1
-			fi
-			printf '        <ProjectReference Include="..\\%s\\%s.csproj" />\n' "$ref" "$ref"
-		done
-		printf '    </ItemGroup>\n\n'
-	fi
+    if ((ref_count > 0)); then
+        printf '    <ItemGroup>\n'
+        for ref in "${refs[@]}"; do
+            ref=$(sanitize_single_line "$ref")
+            if [[ -z "$ref" ]]; then
+                log_error "Invalid project reference."
+                return 1
+            fi
+            printf '        <ProjectReference Include="..\\%s\\%s.csproj" />\n' "$ref" "$ref"
+        done
+        printf '    </ItemGroup>\n\n'
+    fi
 
-	printf '    <PropertyGroup>\n'
-	printf '        <TargetFramework>net10.0</TargetFramework>\n'
-	printf '        <RootNamespace>%s</RootNamespace>\n' "$root_namespace"
-	printf '        <ImplicitUsings>enable</ImplicitUsings>\n'
-	printf '        <Nullable>enable</Nullable>\n'
-	printf '    </PropertyGroup>\n\n'
-	printf '</Project>\n'
+    printf '    <PropertyGroup>\n'
+    printf '        <TargetFramework>net10.0</TargetFramework>\n'
+    printf '        <RootNamespace>%s</RootNamespace>\n' "$root_namespace"
+    printf '        <ImplicitUsings>enable</ImplicitUsings>\n'
+    printf '        <Nullable>enable</Nullable>\n'
+    printf '    </PropertyGroup>\n\n'
+    printf '</Project>\n'
 }
 
 assembly_marker_content() {
-	local namespace_name
-	local interface_name
+    local namespace_name
+    local interface_name
 
-	namespace_name="$1"
-	interface_name="$2"
+    namespace_name="$1"
+    interface_name="$2"
 
-	cat <<EOF
+    cat <<EOF
 ﻿namespace ${namespace_name};
 
 public interface ${interface_name};
@@ -403,7 +403,7 @@ EOF
 }
 
 failure_content() {
-	cat <<'EOF'
+    cat <<'EOF'
 namespace PLACEHOLDER.Domain.Results;
 
 public sealed record Failure(string Code, string Message)
@@ -417,7 +417,7 @@ EOF
 }
 
 result_content() {
-	cat <<'EOF'
+    cat <<'EOF'
 namespace PLACEHOLDER.Domain.Results;
 
 public class Result
@@ -458,7 +458,7 @@ EOF
 }
 
 program_content() {
-	cat <<'EOF'
+    cat <<'EOF'
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
@@ -470,336 +470,336 @@ EOF
 }
 
 replace_placeholder_namespace() {
-	local namespace_name
-	namespace_name="$1"
-	namespace_name=$(sanitize_single_line "$namespace_name")
+    local namespace_name
+    namespace_name="$1"
+    namespace_name=$(sanitize_single_line "$namespace_name")
 
-	if [[ -z "$namespace_name" ]]; then
-		log_error "Namespace replacement value cannot be empty."
-		return 1
-	fi
+    if [[ -z "$namespace_name" ]]; then
+        log_error "Namespace replacement value cannot be empty."
+        return 1
+    fi
 
-	if ! sed "s/PLACEHOLDER/${namespace_name//\//\\/}/g"; then
-		log_error "Failed to replace placeholder namespace."
-		return 1
-	fi
+    if ! sed "s/PLACEHOLDER/${namespace_name//\//\\/}/g"; then
+        log_error "Failed to replace placeholder namespace."
+        return 1
+    fi
 }
 
 render_project_csproj() {
-	local suffix
-	local namespace_name
-	local dependencies
-	local deps_array
+    local suffix
+    local namespace_name
+    local dependencies
+    local deps_array
 
-	suffix="$1"
-	namespace_name=$(project_name "$suffix")
+    suffix="$1"
+    namespace_name=$(project_name "$suffix")
 
-	if [[ -z "$namespace_name" ]]; then
-		log_error "Failed to derive project name for suffix: $suffix"
-		return 1
-	fi
+    if [[ -z "$namespace_name" ]]; then
+        log_error "Failed to derive project name for suffix: $suffix"
+        return 1
+    fi
 
-	dependencies=""
-	if ! dependencies=$(project_dependencies "$suffix"); then
-		return 1
-	fi
+    dependencies=""
+    if ! dependencies=$(project_dependencies "$suffix"); then
+        return 1
+    fi
 
-	deps_array=()
-	if [[ -n "$dependencies" ]]; then
-		while IFS= read -r dependency; do
-			dependency=$(sanitize_single_line "$dependency")
-			if [[ -n "$dependency" ]]; then
-				deps_array+=("$dependency")
-			fi
-		done <<<"$dependencies"
-	fi
+    deps_array=()
+    if [[ -n "$dependencies" ]]; then
+        while IFS= read -r dependency; do
+            dependency=$(sanitize_single_line "$dependency")
+            if [[ -n "$dependency" ]]; then
+                deps_array+=("$dependency")
+            fi
+        done <<<"$dependencies"
+    fi
 
-	if ! csproj_content "$namespace_name" "${deps_array[@]}"; then
-		log_error "Failed to render .csproj content for $namespace_name"
-		return 1
-	fi
+    if ! csproj_content "$namespace_name" "${deps_array[@]}"; then
+        log_error "Failed to render .csproj content for $namespace_name"
+        return 1
+    fi
 }
 
 write_or_check_file() {
-	local path
-	local content
-	local parent_dir
-	local tmp_file
+    local path
+    local content
+    local parent_dir
+    local tmp_file
 
-	path="$1"
-	content="$2"
+    path="$1"
+    content="$2"
 
-	path=$(sanitize_single_line "$path")
-	if [[ -z "$path" ]]; then
-		log_error "File path cannot be empty."
-		return 1
-	fi
+    path=$(sanitize_single_line "$path")
+    if [[ -z "$path" ]]; then
+        log_error "File path cannot be empty."
+        return 1
+    fi
 
-	parent_dir=$(dirname -- "$path")
-	parent_dir=$(sanitize_single_line "$parent_dir")
-	if [[ -z "$parent_dir" ]]; then
-		log_error "Failed to resolve parent directory for file: $path"
-		return 1
-	fi
+    parent_dir=$(dirname -- "$path")
+    parent_dir=$(sanitize_single_line "$parent_dir")
+    if [[ -z "$parent_dir" ]]; then
+        log_error "Failed to resolve parent directory for file: $path"
+        return 1
+    fi
 
-	if ! ensure_directory "$parent_dir"; then
-		return 1
-	fi
+    if ! ensure_directory "$parent_dir"; then
+        return 1
+    fi
 
-	if [[ "$MODE" == "check" ]]; then
-		if [[ ! -f "$path" ]]; then
-			log_error "Missing file: $path"
-			return 1
-		fi
+    if [[ "$MODE" == "check" ]]; then
+        if [[ ! -f "$path" ]]; then
+            log_error "Missing file: $path"
+            return 1
+        fi
 
-		if ! ensure_tmp_dir; then
-			return 1
-		fi
+        if ! ensure_tmp_dir; then
+            return 1
+        fi
 
-		if ! tmp_file=$(mktemp "$TMP_DIR/file-check.XXXXXX"); then
-			log_error "Failed to create temporary comparison file."
-			return 1
-		fi
+        if ! tmp_file=$(mktemp "$TMP_DIR/file-check.XXXXXX"); then
+            log_error "Failed to create temporary comparison file."
+            return 1
+        fi
 
-		if ! printf '%s' "$content" >"$tmp_file"; then
-			log_error "Failed to write temporary comparison file."
-			rm -f -- "$tmp_file"
-			return 1
-		fi
+        if ! printf '%s' "$content" >"$tmp_file"; then
+            log_error "Failed to write temporary comparison file."
+            rm -f -- "$tmp_file"
+            return 1
+        fi
 
-		if ! cmp -s -- "$tmp_file" "$path"; then
-			log_error "File content mismatch: $path"
-			rm -f -- "$tmp_file"
-			return 1
-		fi
+        if ! cmp -s -- "$tmp_file" "$path"; then
+            log_error "File content mismatch: $path"
+            rm -f -- "$tmp_file"
+            return 1
+        fi
 
-		rm -f -- "$tmp_file"
-		return 0
-	fi
+        rm -f -- "$tmp_file"
+        return 0
+    fi
 
-	if ! printf '%s' "$content" >"$path"; then
-		log_error "Failed to write file: $path"
-		return 1
-	fi
+    if ! printf '%s' "$content" >"$path"; then
+        log_error "Failed to write file: $path"
+        return 1
+    fi
 }
 
 ensure_core_directories() {
-	local suffix
-	local dir
+    local suffix
+    local dir
 
-	if ! ensure_directory "$SRC_DIR"; then
-		return 1
-	fi
+    if ! ensure_directory "$SRC_DIR"; then
+        return 1
+    fi
 
-	for suffix in "${PROJECT_SUFFIXES[@]}"; do
-		dir=$(project_directory "$suffix")
-		if [[ -z "$dir" ]]; then
-			log_error "Failed to derive project directory for suffix: $suffix"
-			return 1
-		fi
+    for suffix in "${PROJECT_SUFFIXES[@]}"; do
+        dir=$(project_directory "$suffix")
+        if [[ -z "$dir" ]]; then
+            log_error "Failed to derive project directory for suffix: $suffix"
+            return 1
+        fi
 
-		if ! ensure_directory "$dir"; then
-			return 1
-		fi
-	done
+        if ! ensure_directory "$dir"; then
+            return 1
+        fi
+    done
 
-	if ! ensure_directory "$(project_directory "Domain")/Results"; then
-		return 1
-	fi
+    if ! ensure_directory "$(project_directory "Domain")/Results"; then
+        return 1
+    fi
 }
 
 ensure_directory_build_props() {
-	local content
+    local content
 
-	if ! content=$(directory_build_props_content); then
-		log_error "Failed to render Directory.Build.props content."
-		return 1
-	fi
+    if ! content=$(directory_build_props_content); then
+        log_error "Failed to render Directory.Build.props content."
+        return 1
+    fi
 
-	if ! write_or_check_file "$DIRECTORY_BUILD_PROPS_PATH" "$content"; then
-		return 1
-	fi
+    if ! write_or_check_file "$DIRECTORY_BUILD_PROPS_PATH" "$content"; then
+        return 1
+    fi
 }
 
 ensure_project_files() {
-	local suffix
-	local path
-	local content
+    local suffix
+    local path
+    local content
 
-	for suffix in "${PROJECT_SUFFIXES[@]}"; do
-		path=$(project_file_path "$suffix")
-		if [[ -z "$path" ]]; then
-			log_error "Failed to derive project file path for suffix: $suffix"
-			return 1
-		fi
+    for suffix in "${PROJECT_SUFFIXES[@]}"; do
+        path=$(project_file_path "$suffix")
+        if [[ -z "$path" ]]; then
+            log_error "Failed to derive project file path for suffix: $suffix"
+            return 1
+        fi
 
-		if ! content=$(render_project_csproj "$suffix"); then
-			return 1
-		fi
+        if ! content=$(render_project_csproj "$suffix"); then
+            return 1
+        fi
 
-		if [[ -z "$content" ]]; then
-			log_error "Rendered .csproj content is empty for suffix: $suffix"
-			return 1
-		fi
+        if [[ -z "$content" ]]; then
+            log_error "Rendered .csproj content is empty for suffix: $suffix"
+            return 1
+        fi
 
-		if ! write_or_check_file "$path" "$content"; then
-			return 1
-		fi
-	done
+        if ! write_or_check_file "$path" "$content"; then
+            return 1
+        fi
+    done
 }
 
 ensure_assembly_markers() {
-	local entry
-	local suffix
-	local marker
-	local project
-	local path
-	local content
+    local entry
+    local suffix
+    local marker
+    local project
+    local path
+    local content
 
-	for entry in "${MARKER_PREFIXES[@]}"; do
-		suffix=${entry%%:*}
-		marker=${entry#*:}
+    for entry in "${MARKER_PREFIXES[@]}"; do
+        suffix=${entry%%:*}
+        marker=${entry#*:}
 
-		suffix=$(sanitize_single_line "$suffix")
-		marker=$(sanitize_single_line "$marker")
+        suffix=$(sanitize_single_line "$suffix")
+        marker=$(sanitize_single_line "$marker")
 
-		if [[ -z "$suffix" || -z "$marker" ]]; then
-			log_error "Invalid assembly marker definition: $entry"
-			return 1
-		fi
+        if [[ -z "$suffix" || -z "$marker" ]]; then
+            log_error "Invalid assembly marker definition: $entry"
+            return 1
+        fi
 
-		project=$(project_name "$suffix")
-		path="$(project_directory "$suffix")/$marker.cs"
+        project=$(project_name "$suffix")
+        path="$(project_directory "$suffix")/$marker.cs"
 
-		if ! content=$(assembly_marker_content "$project" "$marker"); then
-			log_error "Failed to render assembly marker for project: $project"
-			return 1
-		fi
+        if ! content=$(assembly_marker_content "$project" "$marker"); then
+            log_error "Failed to render assembly marker for project: $project"
+            return 1
+        fi
 
-		if ! write_or_check_file "$path" "$content"; then
-			return 1
-		fi
-	done
+        if ! write_or_check_file "$path" "$content"; then
+            return 1
+        fi
+    done
 }
 
 ensure_domain_result_files() {
-	local failure_rendered
-	local result_rendered
-	local failure_path
-	local result_path
+    local failure_rendered
+    local result_rendered
+    local failure_path
+    local result_path
 
-	failure_path="$(project_directory "Domain")/Results/Failure.cs"
-	result_path="$(project_directory "Domain")/Results/Result.cs"
+    failure_path="$(project_directory "Domain")/Results/Failure.cs"
+    result_path="$(project_directory "Domain")/Results/Result.cs"
 
-	if ! failure_rendered=$(failure_content | replace_placeholder_namespace "$SERVICE_NAME"); then
-		log_error "Failed to render Failure.cs"
-		return 1
-	fi
+    if ! failure_rendered=$(failure_content | replace_placeholder_namespace "$SERVICE_NAME"); then
+        log_error "Failed to render Failure.cs"
+        return 1
+    fi
 
-	if [[ -z "$failure_rendered" ]]; then
-		log_error "Failure.cs content is empty."
-		return 1
-	fi
+    if [[ -z "$failure_rendered" ]]; then
+        log_error "Failure.cs content is empty."
+        return 1
+    fi
 
-	if ! result_rendered=$(result_content | replace_placeholder_namespace "$SERVICE_NAME"); then
-		log_error "Failed to render Result.cs"
-		return 1
-	fi
+    if ! result_rendered=$(result_content | replace_placeholder_namespace "$SERVICE_NAME"); then
+        log_error "Failed to render Result.cs"
+        return 1
+    fi
 
-	if [[ -z "$result_rendered" ]]; then
-		log_error "Result.cs content is empty."
-		return 1
-	fi
+    if [[ -z "$result_rendered" ]]; then
+        log_error "Result.cs content is empty."
+        return 1
+    fi
 
-	if ! write_or_check_file "$failure_path" "$failure_rendered"; then
-		return 1
-	fi
+    if ! write_or_check_file "$failure_path" "$failure_rendered"; then
+        return 1
+    fi
 
-	if ! write_or_check_file "$result_path" "$result_rendered"; then
-		return 1
-	fi
+    if ! write_or_check_file "$result_path" "$result_rendered"; then
+        return 1
+    fi
 }
 
 ensure_program_file() {
-	local path
-	local content
+    local path
+    local content
 
-	path="$(project_directory "Presentation")/Program.cs"
+    path="$(project_directory "Presentation")/Program.cs"
 
-	if ! content=$(program_content); then
-		log_error "Failed to render Program.cs"
-		return 1
-	fi
+    if ! content=$(program_content); then
+        log_error "Failed to render Program.cs"
+        return 1
+    fi
 
-	if [[ -z "$content" ]]; then
-		log_error "Program.cs content is empty."
-		return 1
-	fi
+    if [[ -z "$content" ]]; then
+        log_error "Program.cs content is empty."
+        return 1
+    fi
 
-	if ! write_or_check_file "$path" "$content"; then
-		return 1
-	fi
+    if ! write_or_check_file "$path" "$content"; then
+        return 1
+    fi
 }
 
 print_summary() {
-	log_info "Target directory : $ABS_TARGET_DIR"
-	log_info "Service name     : $SERVICE_NAME"
-	log_info "Mode             : $MODE"
+    log_info "Target directory : $ABS_TARGET_DIR"
+    log_info "Service name     : $SERVICE_NAME"
+    log_info "Mode             : $MODE"
 }
 
 main() {
-	local parse_result
+    local parse_result
 
-	setup_signal_handlers
+    setup_signal_handlers
 
-	parse_result=0
-	if ! parse_arguments "$@"; then
-		parse_result=$?
-		if ((parse_result == 2)); then
-			return 0
-		fi
-		return 1
-	fi
+    parse_result=0
+    if ! parse_arguments "$@"; then
+        parse_result=$?
+        if ((parse_result == 2)); then
+            return 0
+        fi
+        return 1
+    fi
 
-	if ! resolve_target_directory; then
-		return 1
-	fi
+    if ! resolve_target_directory; then
+        return 1
+    fi
 
-	if ! derive_service_name; then
-		return 1
-	fi
+    if ! derive_service_name; then
+        return 1
+    fi
 
-	print_summary
+    print_summary
 
-	if ! ensure_core_directories; then
-		return 1
-	fi
+    if ! ensure_core_directories; then
+        return 1
+    fi
 
-	if ! ensure_directory_build_props; then
-		return 1
-	fi
+    if ! ensure_directory_build_props; then
+        return 1
+    fi
 
-	if ! ensure_project_files; then
-		return 1
-	fi
+    if ! ensure_project_files; then
+        return 1
+    fi
 
-	if ! ensure_assembly_markers; then
-		return 1
-	fi
+    if ! ensure_assembly_markers; then
+        return 1
+    fi
 
-	if ! ensure_domain_result_files; then
-		return 1
-	fi
+    if ! ensure_domain_result_files; then
+        return 1
+    fi
 
-	if ! ensure_program_file; then
-		return 1
-	fi
+    if ! ensure_program_file; then
+        return 1
+    fi
 
-	if [[ "$MODE" == "check" ]]; then
-		log_info "Structure and file contents are valid."
-	else
-		log_info "Structure ensured successfully."
-	fi
+    if [[ "$MODE" == "check" ]]; then
+        log_info "Structure and file contents are valid."
+    else
+        log_info "Structure ensured successfully."
+    fi
 }
 
 main "$@"
