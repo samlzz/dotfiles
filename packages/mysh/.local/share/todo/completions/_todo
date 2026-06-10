@@ -34,6 +34,7 @@ _todo() {
 			'create:Create a new .todo file'
 			'add:Add a new entry to a todo file'
 			'edit:Open a todo file in interactive editor'
+			'e:Open a todo file in interactive editor (alias: edit)'
 			'delete:Delete a todo file after confirmation'
 			'help:Display help message'
 		)
@@ -44,7 +45,7 @@ _todo() {
 		add)
 			_todo_add
 			;;
-		display | show | edit | delete)
+		display | show | edit | e | delete)
 			_arguments ':todo file:_todo_files'
 			;;
 		list | ls | help | create) ;;

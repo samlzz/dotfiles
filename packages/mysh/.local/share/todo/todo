@@ -470,7 +470,7 @@ Commands:
   list|ls [name]        Interactive list view for the specified .todo
   create [name]         Create a new .todo file (default: default.todo)
   add [-d|--done] [name] Add a new TODO entry (checked with -d)
-  edit [name]           Open the .todo in \$EDITOR
+  edit|e [name]         Open the .todo in \$EDITOR
   delete [name]         Delete a .todo file after confirmation
   help                  Display this help message
 
@@ -548,7 +548,7 @@ handle_commands() {
         add)
             add_todo_entry "$todo_file" "$add_flag_done" "$add_flag_mult" "$add_sub_parent"
             ;;
-        edit)
+        edit | e)
             edit_todo_file "$todo_file"
             ;;
         delete)
@@ -624,7 +624,7 @@ main() {
     shift || true
 
     case "$arg" in
-    add | display | show | list | ls | create | edit | delete)
+    add | display | show | list | ls | create | edit | e | delete)
         handle_commands "$arg" "$@"
         ;;
     help | --help | -h)
