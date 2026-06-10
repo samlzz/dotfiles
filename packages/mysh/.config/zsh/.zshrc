@@ -81,6 +81,9 @@ autoload -Uz compinit && compinit -d "$ZSH_COMPDUMP"
 
 [[ -f "$SITE_FUNCTIONS/custom_completion.zsh" ]] && source "$SITE_FUNCTIONS/custom_completion.zsh"
 
+# Overwrite _devtodo binding to my todo script
+compdef _todo todo
+
 # For rm_secure
 autoload -Uz complist
 zmodload zsh/complist

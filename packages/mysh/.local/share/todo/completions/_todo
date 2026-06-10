@@ -1,0 +1,56 @@
+#compdef todo
+
+_todo_files() {
+	local -a files
+	files=(${(f)"$(find . -maxdepth 1 -name '*.todo' -printf '%P\n' 2>/dev/null | sed 's/\.todo$//')"})
+	compadd -a files
+}
+
+_todo_add() {
+	_arguments -S \
+		'(-d --done)'{-d,--done}'[Mark new entry as already done]' \
+		'(-m --multiple -si --subitems)'{-m,--multiple}'[Add multiple entries interactively (Ctrl+D to finish)]' \
+		'(-m --multiple -si --subitems)'{-si,--subitems}'[Add as subitem under given parent]:parent text:' \
+		':todo file:_todo_files'
+}
+
+_todo() {
+	local context state state_descr line
+	typeset -A opt_args
+	local curcontext="$curcontext"
+
+	_arguments -C \
+		'(- *)'{-h,--help}'[Display help and exit]' \
+		':command:->command' \
+		'*::args:->args'
+
+	case $state in
+	command)
+		local -a cmds=(
+			'display:Display raw contents of a todo file'
+			'show:Display todo file with rendered checkboxes'
+			'list:List all .todo files in current directory'
+			'ls:List all .todo files in current directory'
+			'create:Create a new .todo file'
+			'add:Add a new entry to a todo file'
+			'edit:Open a todo file in interactive editor'
+			'delete:Delete a todo file after confirmation'
+			'help:Display help message'
+		)
+		_describe 'commands' cmds
+		;;
+	args)
+		case $line[1] in
+		add)
+			_todo_add
+			;;
+		display | show | edit | delete)
+			_arguments ':todo file:_todo_files'
+			;;
+		list | ls | help | create) ;;
+		esac
+		;;
+	esac
+}
+
+_todo "$@"
