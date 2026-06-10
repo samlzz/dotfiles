@@ -1,12 +1,13 @@
 ### ─────────────────────────────────────────────────────────────
-### Fzf
+### Fzf Catppuccin Mocha theme
 ### ─────────────────────────────────────────────────────────────
 
 export FZF_DEFAULT_OPTS=" \
---color=bg+:#363a4f,bg:#24273a,spinner:#f4dbd6,hl:#ed8796 \
---color=fg:#cad3f5,header:#ed8796,info:#c6a0f6,pointer:#f4dbd6 \
---color=marker:#b7bdf8,fg+:#cad3f5,prompt:#c6a0f6,hl+:#ed8796 \
---multi"
+--color=bg+:#313244,bg:#1E1E2E,spinner:#F5E0DC,hl:#F38BA8 \
+--color=fg:#CDD6F4,header:#F38BA8,info:#CBA6F7,pointer:#F5E0DC \
+--color=marker:#B4BEFE,fg+:#CDD6F4,prompt:#CBA6F7,hl+:#F38BA8 \
+--color=selected-bg:#45475A \
+--color=border:#6C7086,label:#CDD6F4"
 
 ### ─────────────────────────────────────────────────────────────
 ### Fzf-tab
