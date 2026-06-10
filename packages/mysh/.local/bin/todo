@@ -25,7 +25,7 @@ BLACK="30"
 # ======== Utils ======= #
 ##########################
 
-find_first_todo_file() {
+find_or_select_todo_files() {
   local files=()
   while IFS= read -r -d '' f; do
     files+=("$f")
@@ -44,9 +44,10 @@ find_first_todo_file() {
   local display=("${files[@]#./}")
   local selected
 
+  local chosen
   if command -v fzf >/dev/null 2>&1; then
-    selected=$(printf "%s\n" "${display[@]}" | fzf --prompt="Select todo file: " --height=10 --border --no-info)
-    if [[ -z "$selected" ]]; then
+    chosen=$(printf "%s\n" "${display[@]}" | fzf --prompt="Select todo file: " --height=10 --border --no-info -m)
+    if [[ -z "$chosen" ]]; then
       printf "Error: No file selected.\n" >&2
       return 1
     fi
@@ -54,16 +55,18 @@ find_first_todo_file() {
     printf "Multiple .todo files found:\n" >&2
     local PS3="Select: "
     select selected in "${display[@]}"; do
-      [[ -n "$selected" ]] && break
+      [[ -n "$selected" ]] && { chosen="$selected"; break; }
       printf "Invalid selection.\n" >&2
     done
-    if [[ -z "$selected" ]]; then
+    if [[ -z "$chosen" ]]; then
       printf "Error: No file selected.\n" >&2
       return 1
     fi
   fi
 
-  printf "./%s\n" "$selected"
+  while IFS= read -r sel; do
+    [[ -n "$sel" ]] && printf "./%s\n" "$sel"
+  done <<< "$chosen"
 }
 
 find_todo_file() {
@@ -71,7 +74,7 @@ find_todo_file() {
   wanted_raw=${1:-}
 
   if [[ "$wanted_raw" == "null" ]]; then
-    find_first_todo_file
+    find_or_select_todo_files
     return 0
   fi
   local wanted
@@ -84,7 +87,20 @@ find_todo_file() {
     printf "%s\n" "$wanted"
     return
   fi
-  find_first_todo_file
+  find_or_select_todo_files
+}
+
+resolve_todo_files() {
+  local -n _result=$1
+  shift
+  local _raw
+  if ! _raw=$("$@"); then
+    return 1
+  fi
+  _result=()
+  while IFS= read -r _f; do
+    [[ -n "$_f" ]] && _result+=("$_f")
+  done <<< "$_raw"
 }
 
 trim() {
@@ -498,35 +514,38 @@ handle_commands() {
     arg_name="${1:-}"
   fi
 
-  if ! todo_file=$(find_todo_file "$arg_name"); then
+  local todo_files=()
+  if ! resolve_todo_files todo_files find_todo_file "$arg_name"; then
     return 1
   fi
 
-  case "$cmd" in
-  display)
-    display_todo_file "$todo_file"
-    ;;
-  show)
-    show_todo_file "$todo_file"
-    ;;
-  list | ls)
-    list_todo_files
-    ;;
-  add)
-    add_todo_entry "$todo_file" "$add_flag_done" "$add_flag_mult" "$add_sub_parent"
-    ;;
-  edit)
-    edit_todo_file "$todo_file"
-    ;;
-  delete)
-    delete_todo_file "$todo_file"
-    ;;
-  esac
+  for todo_file in "${todo_files[@]}"; do
+    case "$cmd" in
+    display)
+      display_todo_file "$todo_file"
+      ;;
+    show)
+      show_todo_file "$todo_file"
+      ;;
+    list | ls)
+      list_todo_files
+      ;;
+    add)
+      add_todo_entry "$todo_file" "$add_flag_done" "$add_flag_mult" "$add_sub_parent"
+      ;;
+    edit)
+      edit_todo_file "$todo_file"
+      ;;
+    delete)
+      delete_todo_file "$todo_file"
+      ;;
+    esac
+  done
 }
 
 auto_behavior() {
-  local todo_file
-  if ! todo_file=$(find_first_todo_file); then
+  local todo_files=()
+  if ! resolve_todo_files todo_files find_or_select_todo_files; then
     return 1
   fi
 
@@ -535,9 +554,13 @@ auto_behavior() {
       printf "Error: sub-command 'todo-list-interactiv' not found.\n" >&2
       return 1
     fi
-    todo-list-interactiv "$todo_file"
+    for todo_file in "${todo_files[@]}"; do
+      todo-list-interactiv "$todo_file"
+    done
   else
-    display_todo_file "$todo_file"
+    for todo_file in "${todo_files[@]}"; do
+      display_todo_file "$todo_file"
+    done
   fi
 }
 
