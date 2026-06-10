@@ -26,13 +26,44 @@ BLACK="30"
 ##########################
 
 find_first_todo_file() {
-  local file
-  file=$(find . -maxdepth 1 -type f -name "*.todo" -print -quit)
-  if [[ -z "${file// /}" ]]; then
+  local files=()
+  while IFS= read -r -d '' f; do
+    files+=("$f")
+  done < <(find . -maxdepth 1 -type f -name "*.todo" -print0)
+
+  if [[ ${#files[@]} -eq 0 ]]; then
     printf "Error: No .todo file found in current directory.\n" >&2
     return 1
   fi
-  printf "%s\n" "$file"
+
+  if [[ ${#files[@]} -eq 1 ]]; then
+    printf "%s\n" "${files[0]}"
+    return 0
+  fi
+
+  local display=("${files[@]#./}")
+  local selected
+
+  if command -v fzf >/dev/null 2>&1; then
+    selected=$(printf "%s\n" "${display[@]}" | fzf --prompt="Select todo file: " --height=10 --border --no-info)
+    if [[ -z "$selected" ]]; then
+      printf "Error: No file selected.\n" >&2
+      return 1
+    fi
+  else
+    printf "Multiple .todo files found:\n" >&2
+    local PS3="Select: "
+    select selected in "${display[@]}"; do
+      [[ -n "$selected" ]] && break
+      printf "Invalid selection.\n" >&2
+    done
+    if [[ -z "$selected" ]]; then
+      printf "Error: No file selected.\n" >&2
+      return 1
+    fi
+  fi
+
+  printf "./%s\n" "$selected"
 }
 
 find_todo_file() {
