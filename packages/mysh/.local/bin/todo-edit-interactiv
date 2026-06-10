@@ -1,0 +1,355 @@
+#!/usr/bin/env bash
+
+ESC=$'\033'
+RESET="${ESC}[0m"
+CYAN="36"
+BLACK="30"
+IT="3"
+UD="4"
+
+declare -a RAW_LINES
+declare TODO_FILE
+declare -i SELECTED=0
+declare MODE="select"
+
+declare EDIT_BUFFER=""
+declare -i EDIT_CURSOR=0
+
+##########################
+# ======== Utils ======= #
+##########################
+
+get_indent_level() {
+  local line="$1"
+  local indent
+  indent=$(sed -E 's/^([[:space:]]*).*$/\1/' <<<"$line" | tr -dc ' ')
+  printf "%d" "${#indent}"
+}
+
+toggle_checkbox_line() {
+  local index="$1"
+  local -n lines_ref="$2"
+  local line="${lines_ref[$index]}"
+
+  if [[ "$line" =~ ^([[:space:]]*)\[([ xX])\](.*)$ ]]; then
+    local prefix="${BASH_REMATCH[1]}"
+    local mark="${BASH_REMATCH[2]}"
+    local suffix="${BASH_REMATCH[3]}"
+    if [[ "$mark" == " " ]]; then
+      lines_ref[$index]="${prefix}[x]${suffix}"
+    else
+      lines_ref[$index]="${prefix}[ ]${suffix}"
+    fi
+  fi
+}
+
+save_changes() {
+  local tmp_file
+  if ! tmp_file=$(mktemp); then
+    printf "Error: Failed to create temporary file.\n" >&2
+    return 1
+  fi
+
+  for line in "${RAW_LINES[@]+"${RAW_LINES[@]}"}"; do
+    printf "%s\n" "$line"
+  done >"$tmp_file"
+
+  if ! mv -- "$tmp_file" "$TODO_FILE"; then
+    printf "Error: Failed to save changes to '%s'.\n" "$TODO_FILE" >&2
+    rm -f -- "$tmp_file"
+    return 1
+  fi
+}
+
+load_todo_file() {
+  local file="$1"
+  TODO_FILE="$file"
+  while IFS= read -r line; do
+    RAW_LINES+=("$line")
+  done <"$file"
+}
+
+##########################
+# ======= Render ======= #
+##########################
+
+render_edit_line() {
+  local before="${EDIT_BUFFER:0:$EDIT_CURSOR}"
+  local cur_char="${EDIT_BUFFER:$EDIT_CURSOR:1}"
+  local after="${EDIT_BUFFER:$((EDIT_CURSOR + 1))}"
+  [[ -z "$cur_char" ]] && cur_char=" "
+  printf "> %s%s%s%s%s" \
+    "$before" \
+    "${ESC}[7m" "$cur_char" "${RESET}" \
+    "$after"
+}
+
+draw_screen() {
+  local total="${#RAW_LINES[@]}"
+  clear
+  printf "${ESC}[${UD}m${ESC}[1;${CYAN}mFile '%s' — edit mode${RESET}\n" \
+    "$(basename -s '.todo' "$TODO_FILE")"
+
+  case "$MODE" in
+  select)
+    printf "${ESC}[${IT};${BLACK}m↑↓ navigate  Enter edit  Space toggle  ⌫ delete  q quit${RESET}\n\n"
+    ;;
+  edit)
+    printf "${ESC}[${IT};${BLACK}mEnter confirm  Esc cancel  Tab indent  Shift+Tab unindent  ←→ cursor${RESET}\n\n"
+    ;;
+  confirm_delete)
+    printf "${ESC}[${IT};${BLACK}mDelete this item? y to confirm, any other key to cancel${RESET}\n\n"
+    ;;
+  esac
+
+  local i
+  for ((i = 0; i < total; i++)); do
+    local line="${RAW_LINES[$i]}"
+    if [[ $i -eq $SELECTED ]]; then
+      case "$MODE" in
+      select)
+        printf "${ESC}[7m> %s${RESET}\n" "$line"
+        ;;
+      edit)
+        render_edit_line
+        printf "\n"
+        ;;
+      confirm_delete)
+        printf "${ESC}[7m> %s  Delete? [y/N]${RESET}\n" "$line"
+        ;;
+      esac
+    else
+      printf "  %s\n" "$line"
+    fi
+  done
+
+  # Virtual empty line (add new item)
+  if [[ $SELECTED -eq $total ]]; then
+    case "$MODE" in
+    edit)
+      render_edit_line
+      printf "\n"
+      ;;
+    *)
+      printf "${ESC}[7m> [ ] ${RESET}\n"
+      ;;
+    esac
+  else
+    printf "${ESC}[${IT};${BLACK}m  [ ] ${RESET}\n"
+  fi
+}
+
+redraw_edit_line() {
+  local row=$((SELECTED + 4))  # 1:header 2:help 3:blank then lines start at 4
+  printf "${ESC}[${row};1H${ESC}[2K"
+  render_edit_line
+}
+
+##########################
+# ====== Commands ======= #
+##########################
+
+enter_edit_mode() {
+  local total="${#RAW_LINES[@]}"
+  if [[ $SELECTED -eq $total ]]; then
+    EDIT_BUFFER="[ ] "
+    EDIT_CURSOR=4
+  else
+    EDIT_BUFFER="${RAW_LINES[$SELECTED]}"
+    EDIT_CURSOR="${#EDIT_BUFFER}"
+  fi
+  MODE="edit"
+}
+
+confirm_edit() {
+  local total="${#RAW_LINES[@]}"
+  if [[ $SELECTED -eq $total ]]; then
+    RAW_LINES+=("$EDIT_BUFFER")
+  else
+    RAW_LINES[$SELECTED]="$EDIT_BUFFER"
+  fi
+  MODE="select"
+}
+
+delete_selected() {
+  local total="${#RAW_LINES[@]}"
+  local new_lines=() i
+  for ((i = 0; i < total; i++)); do
+    [[ $i -ne $SELECTED ]] && new_lines+=("${RAW_LINES[$i]}")
+  done
+  if [[ ${#new_lines[@]} -gt 0 ]]; then
+    RAW_LINES=("${new_lines[@]}")
+  else
+    RAW_LINES=()
+  fi
+  local new_total="${#RAW_LINES[@]}"
+  if [[ $new_total -eq 0 ]]; then
+    SELECTED=0
+  elif [[ $SELECTED -ge $new_total ]]; then
+    SELECTED=$((new_total - 1))
+  fi
+  MODE="select"
+}
+
+quit_and_save() {
+  save_changes
+  stty sane
+  clear
+  exit 0
+}
+
+##########################
+# ==== Key handlers ===== #
+##########################
+
+handle_select_key() {
+  local c="$1" c2="$2" c3="$3"
+  local total="${#RAW_LINES[@]}"
+  local nav_size=$((total + 1))
+
+  if [[ "$c" == $'\x1b' ]]; then
+    case "$c2" in
+    "[")
+      case "$c3" in
+      "A") SELECTED=$(((SELECTED - 1 + nav_size) % nav_size)) ;;
+      "B") SELECTED=$(((SELECTED + 1) % nav_size)) ;;
+      esac
+      ;;
+    "") quit_and_save ;;
+    esac
+    return
+  fi
+
+  case "$c" in
+  "") enter_edit_mode ;;
+  " ") [[ $SELECTED -lt $total ]] && toggle_checkbox_line "$SELECTED" RAW_LINES ;;
+  $'\x7f') [[ $SELECTED -lt $total ]] && MODE="confirm_delete" ;;
+  "q" | "Q") quit_and_save ;;
+  esac
+}
+
+handle_edit_key() {
+  local c="$1" c2="$2" c3="$3" c4="$4"
+  local buf_len="${#EDIT_BUFFER}"
+
+  if [[ "$c" == $'\x1b' ]]; then
+    case "$c2" in
+    "[")
+      case "$c3" in
+      "C") [[ $EDIT_CURSOR -lt $buf_len ]] && ((EDIT_CURSOR++)) ;;
+      "D") [[ $EDIT_CURSOR -gt 0 ]] && ((EDIT_CURSOR--)) ;;
+      "H") EDIT_CURSOR=0 ;;
+      "F") EDIT_CURSOR=$buf_len ;;
+      "Z")
+        if [[ "${EDIT_BUFFER:0:4}" == "    " ]]; then
+          EDIT_BUFFER="${EDIT_BUFFER:4}"
+          EDIT_CURSOR=$(( EDIT_CURSOR >= 4 ? EDIT_CURSOR - 4 : 0 ))
+        fi
+        ;;
+      "3")
+        if [[ "$c4" == "~" && $EDIT_CURSOR -lt $buf_len ]]; then
+          EDIT_BUFFER="${EDIT_BUFFER:0:$EDIT_CURSOR}${EDIT_BUFFER:$((EDIT_CURSOR + 1))}"
+        fi
+        ;;
+      esac
+      ;;
+    "O")
+      case "$c3" in
+      "H") EDIT_CURSOR=0 ;;
+      "F") EDIT_CURSOR=$buf_len ;;
+      esac
+      ;;
+    "") MODE="select" ;;
+    esac
+    return
+  fi
+
+  case "$c" in
+  "") confirm_edit ;;
+  $'\x7f')
+    if [[ $EDIT_CURSOR -gt 0 ]]; then
+      EDIT_BUFFER="${EDIT_BUFFER:0:$((EDIT_CURSOR - 1))}${EDIT_BUFFER:$EDIT_CURSOR}"
+      ((EDIT_CURSOR--))
+    fi
+    ;;
+  $'\t')
+    EDIT_BUFFER="    ${EDIT_BUFFER}"
+    EDIT_CURSOR=$((EDIT_CURSOR + 4))
+    ;;
+  *)
+    if [[ "$c" =~ ^[[:print:]]$ ]]; then
+      EDIT_BUFFER="${EDIT_BUFFER:0:$EDIT_CURSOR}${c}${EDIT_BUFFER:$EDIT_CURSOR}"
+      ((EDIT_CURSOR++))
+    fi
+    ;;
+  esac
+}
+
+handle_confirm_delete_key() {
+  local c="$1"
+  case "$c" in
+  "y" | "Y") delete_selected ;;
+  *) MODE="select" ;;
+  esac
+}
+
+read_key() {
+  local c="" c2="" c3="" c4=""
+  IFS= read -rsn1 c
+
+  if [[ "$c" == $'\x1b' ]]; then
+    IFS= read -rsn1 -t 0.01 c2
+    if [[ "$c2" == "[" || "$c2" == "O" ]]; then
+      IFS= read -rsn1 -t 0.01 c3
+      if [[ "$c3" == "3" ]]; then
+        IFS= read -rsn1 -t 0.01 c4
+      fi
+    fi
+  fi
+
+  case "$MODE" in
+  select)         handle_select_key  "$c" "$c2" "$c3" ;;
+  edit)           handle_edit_key    "$c" "$c2" "$c3" "$c4" ;;
+  confirm_delete) handle_confirm_delete_key "$c" ;;
+  esac
+}
+
+##########################
+# ======== Main ========= #
+##########################
+
+main_loop() {
+  local prev_mode=""
+  stty -icanon -echo
+  trap 'stty sane; clear; exit 1' INT TERM
+
+  draw_screen
+  prev_mode="$MODE"
+
+  while true; do
+    read_key
+    if [[ "$MODE" == "edit" && "$prev_mode" == "edit" ]]; then
+      redraw_edit_line
+    else
+      draw_screen
+    fi
+    prev_mode="$MODE"
+  done
+}
+
+main() {
+  local file="${1:-}"
+  if [[ -z "$file" ]]; then
+    printf "Usage: todo-edit-interactiv <file.todo>\n" >&2
+    return 1
+  fi
+  if [[ ! -f "$file" ]]; then
+    printf "Error: File '%s' not found.\n" "$file" >&2
+    return 1
+  fi
+
+  load_todo_file "$file"
+  main_loop
+}
+
+main "$@"

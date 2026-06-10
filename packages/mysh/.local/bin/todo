@@ -398,6 +398,16 @@ add_todo_entry() {
 ###################
 
 edit_todo_file() {
+  local todo_file="$1"
+
+  if [[ -t 1 ]] && command -v todo-edit-interactiv >/dev/null 2>&1; then
+    if ! todo-edit-interactiv "$todo_file"; then
+      printf "Error: Failed to edit '%s'.\n" "$todo_file" >&2
+      return 1
+    fi
+    return 0
+  fi
+
   if [[ -z "${EDITOR-}" ]]; then
     printf "Error: EDITOR environment variable is not set.\n" >&2
     return 1
@@ -411,7 +421,6 @@ edit_todo_file() {
     return 1
   fi
 
-  local todo_file="$1"
   printf "Open %s with %s\n" "$todo_file" "$EDITOR"
   if ! "$EDITOR" -- "$todo_file"; then
     printf "Error: Failed to edit '%s'.\n" "$todo_file" >&2
