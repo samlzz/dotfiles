@@ -95,9 +95,9 @@ draw_screen() {
     case "$MODE" in
     select)
         if [[ ${#MARKED[@]} -gt 0 ]]; then
-            printf "${ESC}[${IT};${BLACK}m↑↓ navigate  Enter edit  Space toggle  ⌫ delete ${#MARKED[@]} marked  = mark  q quit${RESET}\n\n"
+            printf "${ESC}[${IT};${BLACK}m↑↓ navigate  Enter edit  a add below  Space toggle  ⌫ delete ${#MARKED[@]} marked  = mark  q quit${RESET}\n\n"
         else
-            printf "${ESC}[${IT};${BLACK}m↑↓ navigate  Enter edit  Space toggle  ⌫ delete  = mark  q quit${RESET}\n\n"
+            printf "${ESC}[${IT};${BLACK}m↑↓ navigate  Enter edit  a add below  Space toggle  ⌫ delete  = mark  q quit${RESET}\n\n"
         fi
         ;;
     edit)
@@ -216,6 +216,24 @@ delete_selected() {
     MODE="select"
 }
 
+insert_below() {
+    local total="${#RAW_LINES[@]}"
+    [[ $SELECTED -ge $total ]] && return
+    local line="${RAW_LINES[$SELECTED]}"
+    local indent
+    indent=$(sed -E 's/^([[:space:]]*).*$/\1/' <<<"$line")
+    local new_lines=() i
+    for ((i = 0; i < total; i++)); do
+        new_lines+=("${RAW_LINES[$i]}")
+        [[ $i -eq $SELECTED ]] && new_lines+=("${indent}[ ] ")
+    done
+    RAW_LINES=("${new_lines[@]}")
+    ((SELECTED++))
+    EDIT_BUFFER="${RAW_LINES[$SELECTED]}"
+    EDIT_CURSOR="${#EDIT_BUFFER}"
+    MODE="edit"
+}
+
 toggle_mark() {
     local total="${#RAW_LINES[@]}"
     [[ $SELECTED -ge $total ]] && return
@@ -280,6 +298,7 @@ handle_select_key() {
             [[ $SELECTED -lt $total ]] && MODE="confirm_delete"
         fi
         ;;
+    "a" | "A") insert_below ;;
     "=") toggle_mark ;;
     "q" | "Q") quit_and_save ;;
     esac
