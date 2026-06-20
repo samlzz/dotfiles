@@ -46,7 +46,7 @@ zstyle ':fzf-tab:complete:git-show:*' fzf-preview \
 	"commit tag") git show --color=always $word ;;
 	*) git show --color=always $word | delta ;;
 	esac'
-zstyle ':fzf-tab:complete:git-checkout:*' fzf-preview \
+	zstyle ':fzf-tab:complete:g(it-checkout|hist):*' fzf-preview \
 	'case "$group" in
 	"modified file") git diff $word | delta ;;
 	"recent commit object name") git show --color=always $word | delta ;;

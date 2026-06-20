@@ -1,0 +1,42 @@
+#compdef ghist
+
+_ghist_refs_or_files() {
+    local w
+    for w in "${words[@]}"; do
+        [[ "$w" == '--' ]] && { _files; return; }
+    done
+    (( $+functions[__git_commits] )) || _git
+    if (( $+functions[__git_commits] )); then
+        __git_commits
+    else
+        local -a refs
+        refs=(${(f)"$(git branch --format='%(refname:short)' 2>/dev/null)"})
+        refs+=(${(f)"$(git tag 2>/dev/null)"})
+        compadd -a refs
+    fi
+}
+
+_ghist_authors() {
+    local -a authors
+    authors=(${(f)"$(git log --format='%an' 2>/dev/null | sort -u)"})
+    compadd -a authors
+}
+
+_ghist() {
+    _arguments -s \
+        '(- :)'{-h,--help}'[Show this help and exit]' \
+        '(-a --all)'{-a,--all}'[Include all branches/tags/remotes]' \
+        '--no-merges[Exclude merge commits]' \
+        '--author=[Filter by author name/email]:pattern:_ghist_authors' \
+        '--grep=[Filter by commit message content]:pattern' \
+        '--since=[Show commits newer than date]:date:(yesterday "1 week ago" "1 month ago")' \
+        '--until=[Show commits older than date]:date:(yesterday "1 week ago" "1 month ago")' \
+        '(-s --stat)'{-s,--stat}'[Show file change statistics in preview]' \
+        '(-q --no-patch)'{-q,--no-patch}'[Show commit message only in preview, no diff]' \
+        '(-w --word-diff)'{-w,--word-diff}'[Word-level diff in preview]' \
+        '(-n --name-only)'{-n,--name-only}'[Show only names of changed files in preview]' \
+        '--name-status[Show names and status of changed files in preview]' \
+        '*:ref or path:_ghist_refs_or_files'
+}
+
+_ghist "$@"
