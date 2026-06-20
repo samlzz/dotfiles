@@ -235,13 +235,20 @@ insert_below() {
 }
 
 toggle_mark() {
+    local opt="$1"
+
     local total="${#RAW_LINES[@]}"
     [[ $SELECTED -ge $total ]] && return
+
     if [[ -n "${MARKED[$SELECTED]+x}" ]]; then
         unset 'MARKED[$SELECTED]'
-    else
+    elif [[ "$opt" != "unincr" ]]; then
         MARKED[$SELECTED]=1
     fi
+
+    [[ -z "$opt" ]] && return
+    [[ "$opt" == "incr" ]] && [[ $SELECTED -lt $total ]] && ((SELECTED++))
+    [[ "$opt" == "unincr" ]] && [[ $SELECTED -gt 0 ]] && ((SELECTED--))
 }
 
 quit_and_save() {
@@ -299,7 +306,8 @@ handle_select_key() {
         fi
         ;;
     "a" | "A") insert_below ;;
-    "=") toggle_mark ;;
+    "=") toggle_mark 'incr' ;;
+    "-") toggle_mark 'unincr' ;;
     "q" | "Q") quit_and_save ;;
     esac
 }
