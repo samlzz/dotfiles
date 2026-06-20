@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# === GLOBALS ===
+
+SCRIPT_NAME="$(basename "$0")"
+DEPENDENCIES=(git fzf)
+
+LOG_OPTS=()
+SHOW_OPTS=()
+REFS=()
+PATHS=()
+
+# === FUNCTIONS ===
+
+usage() {
+	cat >&2 <<EOF
+Usage: ${SCRIPT_NAME} [LOG_OPTS] [SHOW_OPTS] [REF[..REF]] [-- <path>...]
+
+Arguments:
+  REF              Branch, tag, or commit range (e.g. main, v1.0, HEAD~5..HEAD)
+  -- <path>...     Restrict history to these paths
+
+Log filtering options (-> git log):
+  -a, --all               Include all branches/tags/remotes
+      --no-merges         Exclude merge commits
+      --author=<pattern>  Filter by author name/email
+      --grep=<pattern>    Filter by commit message content
+      --since=<date>      Show commits newer than date
+      --until=<date>      Show commits older than date
+
+Preview options (-> git show in fzf):
+  -s, --stat              Show file change statistics
+  -q, --no-patch          Show commit message only, no diff
+  -w, --word-diff         Word-level diff
+  -n, --name-only         Show only names of changed files
+      --name-status       Show names and status (A/M/D)
+
+General:
+  -h, --help              Show this help and exit
+
+fzf keybinds:
+  Enter    Open in pager (confirmation) or copy hash to clipboard
+  ctrl-y   Copy hash to clipboard + notify
+  ctrl-p   Toggle preview window
+EOF
+}
+
+check_dependencies() {
+	local cmd
+	for cmd in "${DEPENDENCIES[@]}"; do
+		if ! command -v "$cmd" &>/dev/null; then
+			printf "Error: required tool '%s' is not installed or not in PATH\n" "$cmd" >&2
+			exit 1
+		fi
+	done
+}
+
+detect_clipboard_cmd() {
+	if command -v wl-copy &>/dev/null; then
+		printf "wl-copy"
+	elif command -v xclip &>/dev/null; then
+		printf "xclip -selection clipboard"
+	elif command -v xsel &>/dev/null; then
+		printf "xsel --clipboard --input"
+	else
+		printf ""
+	fi
+}
+
+run_fzf() {
+	local show_str=""
+	if [[ ${#SHOW_OPTS[@]} -gt 0 ]]; then
+		show_str="${SHOW_OPTS[*]}"
+	fi
+
+	local clipboard_cmd
+	clipboard_cmd="$(detect_clipboard_cmd)"
+	local pager="${PAGER:-less} $LESS"
+
+	local git_args=()
+	if [[ ${#LOG_OPTS[@]} -gt 0 ]]; then git_args+=("${LOG_OPTS[@]}"); fi
+	if [[ ${#REFS[@]} -gt 0 ]]; then git_args+=("${REFS[@]}"); fi
+	if [[ ${#PATHS[@]} -gt 0 ]]; then git_args+=("--" "${PATHS[@]}"); fi
+
+	local copy_and_notify
+	if [[ -n "$clipboard_cmd" ]]; then
+		copy_and_notify="printf '%s' \"\$hash\" | $clipboard_cmd; notify-send 'ghist' \"Hash \$hash copied to clipboard\" 2>/dev/null || true"
+	else
+		copy_and_notify="printf 'No clipboard tool available (install wl-copy or xclip)\n' >&2"
+	fi
+
+	local ctrly_cmd
+	if [[ -n "$clipboard_cmd" ]]; then
+		ctrly_cmd="printf '%s' {1} | $clipboard_cmd; notify-send ghist \"Hash {1} copied to clipboard\" 2>/dev/null || true"
+	else
+		ctrly_cmd="printf 'No clipboard tool available (install wl-copy or xclip)\n' >&2"
+	fi
+
+	git log --color=always \
+		--pretty=format:"%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
+		--date-order --date=human \
+		"${git_args[@]}" |
+		fzf --ansi --no-sort \
+			--preview "git show --color=always $show_str {1}" \
+			--preview-window='right:70%' \
+			--bind "enter:execute(
+            hash={1}
+            printf 'Open in pager? [Y/n] '
+            read -r ans </dev/tty
+            if [[ \"\$ans\" =~ ^[Nn]\$ ]]; then
+                $copy_and_notify
+            else
+                git show --color=always $show_str \"\$hash\" | $pager -R
+            fi
+        )" \
+			--bind "ctrl-y:execute-silent($ctrly_cmd)" \
+			--bind "ctrl-p:toggle-preview" ||
+		true
+}
+
+main() {
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--)
+			shift
+			PATHS=("$@")
+			break
+			;;
+		-h | --help)
+			usage
+			exit 0
+			;;
+		-a | --all)
+			LOG_OPTS+=("--all")
+			;;
+		--no-merges)
+			LOG_OPTS+=("--no-merges")
+			;;
+		--author=* | --grep=* | --since=* | --until=*)
+			LOG_OPTS+=("$1")
+			;;
+		--author | --grep | --since | --until)
+			if [[ $# -lt 2 ]]; then
+				printf "Error: '%s' requires an argument\n" "$1" >&2
+				usage
+				exit 1
+			fi
+			LOG_OPTS+=("$1" "$2")
+			shift
+			;;
+		-s | --stat)
+			SHOW_OPTS+=("--stat")
+			;;
+		-q | --no-patch)
+			SHOW_OPTS+=("--no-patch")
+			;;
+		-w | --word-diff)
+			SHOW_OPTS+=("--word-diff")
+			;;
+		-n | --name-only)
+			SHOW_OPTS+=("--name-only")
+			;;
+		--name-status)
+			SHOW_OPTS+=("--name-status")
+			;;
+		-*)
+			printf "Error: unknown option '%s'\n" "$1" >&2
+			usage
+			exit 1
+			;;
+		*)
+			REFS+=("$1")
+			;;
+		esac
+		shift
+	done
+
+	check_dependencies
+
+	if ! git rev-parse --git-dir &>/dev/null; then
+		printf "Error: not a git repository\n" >&2
+		exit 1
+	fi
+
+	run_fzf
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+	main "$@"
+	exit 0
+fi
