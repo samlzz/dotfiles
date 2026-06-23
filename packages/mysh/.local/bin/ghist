@@ -45,6 +45,13 @@ General:
 fzf keybinds:
   Enter    Open in pager
   ctrl-y   Copy hash to clipboard + notify
+  ctrl-r   Interactive rebase from this commit (full todo)
+  ctrl-e   Edit commit content (pauses rebase, amend then git rebase --continue)
+  ctrl-w   Reword commit message only
+  ctrl-o   Checkout this commit/branch
+  ctrl-b   Create new branch from this commit
+  ctrl-x   Cherry-pick onto current branch
+  ctrl-u   Reset --soft to this commit
   ctrl-p   Toggle preview window
 EOF
 }
@@ -71,6 +78,29 @@ detect_clipboard_cmd() {
 	fi
 }
 
+check_dirty_and_stash() {
+	[[ -z "$(git status --porcelain)" ]] && return 0
+
+	printf "Uncommitted changes detected:\n"
+	printf "  [s] Auto stash\n"
+	printf "  [m] Stash with custom message\n"
+	printf "  [n] Cancel\n"
+	read -r -n 1 -p "Choice [s/m/n]: " choice
+	printf "\n"
+
+	case "$choice" in
+		s | S) git stash push -m "ghist: auto-stash" ;;
+		m | M)
+			read -r -p "Stash message: " msg
+			git stash push -m "$msg"
+			;;
+		*)
+			printf "Operation cancelled.\n"
+			return 1
+			;;
+	esac
+}
+
 action_pager() {
 	local hash="$1"
 	# shellcheck disable=SC2086
@@ -88,6 +118,54 @@ action_copy() {
 	else
 		printf "No clipboard tool available (install wl-copy or xclip)\n" >&2
 	fi
+}
+
+action_rebase() {
+	local hash="$1"
+	check_dirty_and_stash || return
+	git rebase -i "${hash}^"
+}
+
+action_edit() {
+	local hash="$1"
+	check_dirty_and_stash || return
+	GIT_SEQUENCE_EDITOR="sed -i '0,/^pick/s/^pick/edit/'" git rebase -i "${hash}^"
+}
+
+action_reword() {
+	local hash="$1"
+	GIT_SEQUENCE_EDITOR="sed -i '0,/^pick/s/^pick/reword/'" git rebase -i "${hash}^"
+}
+
+action_checkout() {
+	local hash="$1"
+	check_dirty_and_stash || return
+	git checkout "$hash"
+}
+
+action_branch() {
+	local hash="$1"
+	local name
+	check_dirty_and_stash || return
+	read -r -p "Branch name: " name
+	[[ -z "$name" ]] && { printf "Cancelled.\n"; return; }
+	git checkout -b "$name" "$hash"
+}
+
+action_cherry_pick() {
+	local hash="$1"
+	check_dirty_and_stash || return
+	git cherry-pick "$hash"
+}
+
+action_reset_soft() {
+	local hash="$1"
+	local choice
+	printf "Reset --soft to %s? All commits after this will be unstaged. [y/N] " "$hash"
+	read -r -n 1 choice
+	printf "\n"
+	[[ "$choice" =~ ^[Yy]$ ]] || { printf "Cancelled.\n"; return; }
+	git reset --soft "$hash"
 }
 
 run_fzf() {
@@ -108,7 +186,7 @@ run_fzf() {
 		| fzf --ansi --no-sort \
 			--preview "git show --color=always $SHOW_STR {1}" \
 			--preview-window='right:70%' \
-			--expect=enter,ctrl-y \
+			--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
 			--bind "ctrl-p:toggle-preview"
 	) || true
 
@@ -118,8 +196,15 @@ run_fzf() {
 	[[ -z "$hash" ]] && return
 
 	case "$key" in
-		enter | "") action_pager "$hash" ;;
-		ctrl-y)     action_copy  "$hash" ;;
+		enter | "") action_pager       "$hash" ;;
+		ctrl-y)     action_copy        "$hash" ;;
+		ctrl-r)     action_rebase      "$hash" ;;
+		ctrl-e)     action_edit        "$hash" ;;
+		ctrl-w)     action_reword      "$hash" ;;
+		ctrl-o)     action_checkout    "$hash" ;;
+		ctrl-b)     action_branch      "$hash" ;;
+		ctrl-x)     action_cherry_pick "$hash" ;;
+		ctrl-u)     action_reset_soft  "$hash" ;;
 	esac
 }
 
