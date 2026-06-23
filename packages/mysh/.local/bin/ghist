@@ -12,6 +12,7 @@ LOG_OPTS=()
 SHOW_OPTS=()
 REFS=()
 PATHS=()
+SHOW_STR=""
 
 # === FUNCTIONS ===
 
@@ -42,7 +43,7 @@ General:
   -h, --help              Show this help and exit
 
 fzf keybinds:
-  Enter    Open in pager (confirmation) or copy hash to clipboard
+  Enter    Open in pager
   ctrl-y   Copy hash to clipboard + notify
   ctrl-p   Toggle preview window
 EOF
@@ -70,55 +71,56 @@ detect_clipboard_cmd() {
 	fi
 }
 
-run_fzf() {
-	local show_str=""
-	if [[ ${#SHOW_OPTS[@]} -gt 0 ]]; then
-		show_str="${SHOW_OPTS[*]}"
-	fi
+action_pager() {
+	local hash="$1"
+	# shellcheck disable=SC2086
+	git show --color=always $SHOW_STR "$hash" | ${PAGER:-less} ${LESS:-}
+}
 
+action_copy() {
+	local hash="$1"
 	local clipboard_cmd
 	clipboard_cmd="$(detect_clipboard_cmd)"
-	local pager="${PAGER:-less} $LESS"
+	if [[ -n "$clipboard_cmd" ]]; then
+		# shellcheck disable=SC2086
+		printf '%s' "$hash" | $clipboard_cmd
+		notify-send "ghist" "Hash $hash copied to clipboard" 2>/dev/null || true
+	else
+		printf "No clipboard tool available (install wl-copy or xclip)\n" >&2
+	fi
+}
+
+run_fzf() {
+	if [[ ${#SHOW_OPTS[@]} -gt 0 ]]; then
+		SHOW_STR="${SHOW_OPTS[*]}"
+	fi
 
 	local git_args=()
 	if [[ ${#LOG_OPTS[@]} -gt 0 ]]; then git_args+=("${LOG_OPTS[@]}"); fi
 	if [[ ${#REFS[@]} -gt 0 ]]; then git_args+=("${REFS[@]}"); fi
 	if [[ ${#PATHS[@]} -gt 0 ]]; then git_args+=("--" "${PATHS[@]}"); fi
 
-	local copy_and_notify
-	if [[ -n "$clipboard_cmd" ]]; then
-		copy_and_notify="printf '%s' \"\$hash\" | $clipboard_cmd; notify-send 'ghist' \"Hash \$hash copied to clipboard\" 2>/dev/null || true"
-	else
-		copy_and_notify="printf 'No clipboard tool available (install wl-copy or xclip)\n' >&2"
-	fi
-
-	local ctrly_cmd
-	if [[ -n "$clipboard_cmd" ]]; then
-		ctrly_cmd="printf '%s' {1} | $clipboard_cmd; notify-send ghist \"Hash {1} copied to clipboard\" 2>/dev/null || true"
-	else
-		ctrly_cmd="printf 'No clipboard tool available (install wl-copy or xclip)\n' >&2"
-	fi
-
-	git log --color=always \
+	local result key hash
+	result=$(git log --color=always \
 		--pretty=format:"%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
 		--date-order --date=human \
-		"${git_args[@]}" |
-		fzf --ansi --no-sort \
-			--preview "git show --color=always $show_str {1}" \
+		"${git_args[@]}" \
+		| fzf --ansi --no-sort \
+			--preview "git show --color=always $SHOW_STR {1}" \
 			--preview-window='right:70%' \
-			--bind "enter:execute(
-            hash={1}
-            printf 'Open in pager? [Y/n] '
-            read -r ans </dev/tty
-            if [[ \"\$ans\" =~ ^[Nn]\$ ]]; then
-                $copy_and_notify
-            else
-                git show --color=always $show_str \"\$hash\" | $pager -R
-            fi
-        )" \
-			--bind "ctrl-y:execute-silent($ctrly_cmd)" \
-			--bind "ctrl-p:toggle-preview" ||
-		true
+			--expect=enter,ctrl-y \
+			--bind "ctrl-p:toggle-preview"
+	) || true
+
+	[[ -z "$result" ]] && return
+	key=$(head -1 <<< "$result")
+	hash=$(tail -1 <<< "$result" | awk '{print $1}')
+	[[ -z "$hash" ]] && return
+
+	case "$key" in
+		enter | "") action_pager "$hash" ;;
+		ctrl-y)     action_copy  "$hash" ;;
+	esac
 }
 
 main() {
