@@ -85,12 +85,14 @@ check_dirty_and_stash() {
 	printf "  [s] Auto stash\n"
 	printf "  [m] Stash with custom message\n"
 	printf "  [n] Cancel\n"
+	local choice
 	read -r -n 1 -p "Choice [s/m/n]: " choice
 	printf "\n"
 
 	case "$choice" in
 		s | S) git stash push -m "ghist: auto-stash" ;;
 		m | M)
+			local msg
 			read -r -p "Stash message: " msg
 			git stash push -m "$msg"
 			;;
@@ -104,7 +106,7 @@ check_dirty_and_stash() {
 action_pager() {
 	local hash="$1"
 	# shellcheck disable=SC2086
-	git show --color=always $SHOW_STR "$hash" | ${PAGER:-less} ${LESS:-}
+	git show --color=always "$hash" | ${PAGER:-less} ${LESS:-}
 }
 
 action_copy() {
@@ -134,6 +136,7 @@ action_edit() {
 
 action_reword() {
 	local hash="$1"
+	check_dirty_and_stash || return
 	GIT_SEQUENCE_EDITOR="sed -i '0,/^pick/s/^pick/reword/'" git rebase -i "${hash}^"
 }
 
