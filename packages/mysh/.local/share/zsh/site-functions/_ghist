@@ -26,6 +26,7 @@ _ghist() {
     _arguments -s \
         '(- :)'{-h,--help}'[Show this help and exit]' \
         '(-a --all)'{-a,--all}'[Include all branches/tags/remotes]' \
+        '(-g --graph)'{-g,--graph}'[Show commit graph (like ggraph)]' \
         '--no-merges[Exclude merge commits]' \
         '--author=[Filter by author name/email]:pattern:_ghist_authors' \
         '--grep=[Filter by commit message content]:pattern' \

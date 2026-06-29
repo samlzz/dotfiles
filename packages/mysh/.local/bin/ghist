@@ -13,6 +13,7 @@ SHOW_OPTS=()
 REFS=()
 PATHS=()
 SHOW_STR=""
+GRAPH=0
 
 # === FUNCTIONS ===
 
@@ -49,6 +50,7 @@ Arguments:
 
 Log filtering options (-> git log):
   -a, --all               Include all branches/tags/remotes
+  -g, --graph             Show commit graph (like ggraph)
       --no-merges         Exclude merge commits
       --author=<pattern>  Filter by author name/email
       --grep=<pattern>    Filter by commit message content
@@ -203,31 +205,72 @@ run_fzf() {
 	printf '0' > "$help_state"
 	trap "rm -f '$help_state'" EXIT
 
-	local toggle_help="transform:
+	local toggle_help
+	toggle_help="execute-silent(
 		if [[ \$(cat '$help_state') == '1' ]]; then
 			printf '0' > '$help_state'
-			echo 'change-preview(git show --color=always $SHOW_STR {1})'
 		else
 			printf '1' > '$help_state'
-			echo 'change-preview($script_path --fzf-help)'
-		fi"
+		fi
+	)+refresh-preview"
 
 	local result key hash
-	result=$(git log --color=always \
-		--pretty=format:"%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
-		--date-order --date=human \
-		"${git_args[@]}" \
-		| fzf --ansi --no-sort \
-			--preview "git show --color=always $SHOW_STR {1}" \
-			--preview-window='right:70%' \
-			--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
-			--bind "ctrl-p:toggle-preview" \
-			--bind "?:$toggle_help"
-	) || true
+
+	if [[ "$GRAPH" == "1" ]]; then
+		# Prepend hash as a hidden tab-separated field 1 so {1} is always the hash,
+		# regardless of how many graph characters precede it on the line.
+		local preview_cmd="if [[ \$(cat '$help_state') == '1' ]]; then
+			$script_path --fzf-help
+		else
+			[[ -n '{1}' ]] && git show --color=always $SHOW_STR '{1}'
+		fi"
+		result=$(git log --color=always \
+			--pretty="tformat:%C(auto)%h%d %C(blue)%an %C(green)%ad%Creset %s" \
+			--topo-order --date=human \
+			--graph --decorate "--exclude=refs/stash" \
+			"${git_args[@]}" \
+			| awk '{
+				match($0, /[0-9a-f]{7,40}/)
+				print (RSTART ? substr($0, RSTART, RLENGTH) : "") "\t" $0
+			}' \
+			| fzf --ansi --no-sort \
+				--delimiter=$'\t' --with-nth=2.. \
+				--preview "$preview_cmd" \
+				--preview-window='right:70%' \
+				--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
+				--bind "ctrl-p:toggle-preview" \
+				--bind "?:$toggle_help"
+		) || true
+	else
+		local preview_cmd="if [[ \$(cat '$help_state') == '1' ]]; then
+			$script_path --fzf-help
+		else
+			git show --color=always $SHOW_STR {1}
+		fi"
+		result=$(git log --color=always \
+			--pretty="tformat:%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
+			--date-order --date=human \
+			"${git_args[@]}" \
+			| fzf --ansi --no-sort \
+				--preview "$preview_cmd" \
+				--preview-window='right:70%' \
+				--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
+				--bind "ctrl-p:toggle-preview" \
+				--bind "?:$toggle_help"
+		) || true
+	fi
 
 	[[ -z "$result" ]] && return
 	key=$(head -1 <<< "$result")
-	hash=$(tail -1 <<< "$result" | awk '{print $1}')
+
+	local raw_line
+	raw_line=$(tail -1 <<< "$result")
+	if [[ "$GRAPH" == "1" ]]; then
+		# Field 1 is the hash prepended by awk (tab-separated, hidden from display)
+		hash=$(printf '%s' "$raw_line" | cut -f1)
+	else
+		hash=$(printf '%s' "$raw_line" | awk '{print $1}')
+	fi
 	[[ -z "$hash" ]] && return
 
 	case "$key" in
@@ -261,6 +304,9 @@ main() {
 			;;
 		-a | --all)
 			LOG_OPTS+=("--all")
+			;;
+		-g | --graph)
+			GRAPH=1
 			;;
 		--no-merges)
 			LOG_OPTS+=("--no-merges")
