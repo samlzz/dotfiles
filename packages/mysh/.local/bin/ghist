@@ -200,19 +200,48 @@ run_fzf() {
 	local script_path
 	script_path="$(realpath "${BASH_SOURCE[0]}")"
 
-	local help_state
+	local help_state preview_visible preview_was_hidden
 	help_state=$(mktemp)
+	preview_visible=$(mktemp)
+	preview_was_hidden=$(mktemp)
 	printf '0' > "$help_state"
-	trap "rm -f '$help_state'" EXIT
+	printf '1' > "$preview_visible"
+	printf '0' > "$preview_was_hidden"
+	trap "rm -f '$help_state' '$preview_visible' '$preview_was_hidden'" EXIT
 
+	# ctrl-p: toggle preview and sync the visible state file
+	local ctrl_p_bind
+	ctrl_p_bind="toggle-preview+execute-silent(
+		if [[ \$(cat '$preview_visible') == '1' ]]; then
+			printf '0' > '$preview_visible'
+		else
+			printf '1' > '$preview_visible'
+		fi
+	)"
+
+	# ?: show help (auto-showing preview if hidden), or hide help (restoring hidden state)
 	local toggle_help
-	toggle_help="execute-silent(
+	toggle_help="transform:
 		if [[ \$(cat '$help_state') == '1' ]]; then
 			printf '0' > '$help_state'
+			if [[ \$(cat '$preview_was_hidden') == '1' ]]; then
+				printf '0' > '$preview_was_hidden'
+				printf '0' > '$preview_visible'
+				printf 'hide-preview+refresh-preview'
+			else
+				printf 'refresh-preview'
+			fi
 		else
 			printf '1' > '$help_state'
-		fi
-	)+refresh-preview"
+			if [[ \$(cat '$preview_visible') == '0' ]]; then
+				printf '1' > '$preview_was_hidden'
+				printf '1' > '$preview_visible'
+				printf 'show-preview+refresh-preview'
+			else
+				printf '0' > '$preview_was_hidden'
+				printf 'refresh-preview'
+			fi
+		fi"
 
 	local result key hash
 
@@ -238,7 +267,7 @@ run_fzf() {
 				--preview "$preview_cmd" \
 				--preview-window='right:70%' \
 				--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
-				--bind "ctrl-p:toggle-preview" \
+				--bind "ctrl-p:$ctrl_p_bind" \
 				--bind "?:$toggle_help"
 		) || true
 	else
@@ -255,7 +284,7 @@ run_fzf() {
 				--preview "$preview_cmd" \
 				--preview-window='right:70%' \
 				--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
-				--bind "ctrl-p:toggle-preview" \
+				--bind "ctrl-p:$ctrl_p_bind" \
 				--bind "?:$toggle_help"
 		) || true
 	fi
