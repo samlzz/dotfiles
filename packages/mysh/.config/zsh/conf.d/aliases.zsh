@@ -40,3 +40,5 @@ fi
 if command -v 'uxplay' &> /dev/null; then
 	alias airplay='uxplay -p 7000 -s 1920x1080 -vs waylandsink -as pipewiresink'
 fi
+
+alias hyprsync='export HYPRLAND_INSTANCE_SIGNATURE=$(tmux show-environment -g HYPRLAND_INSTANCE_SIGNATURE 2>/dev/null | cut -d= -f2); export WAYLAND_DISPLAY=$(tmux show-environment -g WAYLAND_DISPLAY 2>/dev/null | cut -d= -f2); echo "HYPRLAND_INSTANCE_SIGNATURE=$HYPRLAND_INSTANCE_SIGNATURE"'
