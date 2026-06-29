@@ -16,6 +16,29 @@ SHOW_STR=""
 
 # === FUNCTIONS ===
 
+fzf_keybinds() {
+	local bold='\033[1m'
+	local cyan='\033[0;36m'
+	local dim='\033[2m'
+	local reset='\033[0m'
+
+	local key="${cyan}${bold}"
+	local sep="${dim}"
+
+	printf "${bold}fzf keybinds${reset}\n\n"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "Enter"  "Open in pager"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-y" "Copy hash to clipboard + notify"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-r" "Interactive rebase from this commit (full todo)"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-e" "Edit commit content  (amend, then git rebase --continue)"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-w" "Reword commit message only"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-o" "Checkout this commit"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-b" "Create new branch from this commit"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-x" "Cherry-pick onto current branch"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-u" "Reset --soft to this commit"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-p" "Toggle preview window"
+	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "?"      "Show this help"
+}
+
 usage() {
 	cat >&2 <<EOF
 Usage: ${SCRIPT_NAME} [LOG_OPTS] [SHOW_OPTS] [REF[..REF]] [-- <path>...]
@@ -43,16 +66,7 @@ General:
   -h, --help              Show this help and exit
 
 fzf keybinds:
-  Enter    Open in pager
-  ctrl-y   Copy hash to clipboard + notify
-  ctrl-r   Interactive rebase from this commit (full todo)
-  ctrl-e   Edit commit content (pauses rebase, amend then git rebase --continue)
-  ctrl-w   Reword commit message only
-  ctrl-o   Checkout this commit/branch
-  ctrl-b   Create new branch from this commit
-  ctrl-x   Cherry-pick onto current branch
-  ctrl-u   Reset --soft to this commit
-  ctrl-p   Toggle preview window
+$(fzf_keybinds)
 EOF
 }
 
@@ -181,6 +195,23 @@ run_fzf() {
 	if [[ ${#REFS[@]} -gt 0 ]]; then git_args+=("${REFS[@]}"); fi
 	if [[ ${#PATHS[@]} -gt 0 ]]; then git_args+=("--" "${PATHS[@]}"); fi
 
+	local script_path
+	script_path="$(realpath "${BASH_SOURCE[0]}")"
+
+	local help_state
+	help_state=$(mktemp)
+	printf '0' > "$help_state"
+	trap "rm -f '$help_state'" EXIT
+
+	local toggle_help="transform:
+		if [[ \$(cat '$help_state') == '1' ]]; then
+			printf '0' > '$help_state'
+			echo 'change-preview(git show --color=always $SHOW_STR {1})'
+		else
+			printf '1' > '$help_state'
+			echo 'change-preview($script_path --fzf-help)'
+		fi"
+
 	local result key hash
 	result=$(git log --color=always \
 		--pretty=format:"%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
@@ -190,7 +221,8 @@ run_fzf() {
 			--preview "git show --color=always $SHOW_STR {1}" \
 			--preview-window='right:70%' \
 			--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
-			--bind "ctrl-p:toggle-preview"
+			--bind "ctrl-p:toggle-preview" \
+			--bind "?:$toggle_help"
 	) || true
 
 	[[ -z "$result" ]] && return
@@ -221,6 +253,10 @@ main() {
 			;;
 		-h | --help)
 			usage
+			exit 0
+			;;
+		--fzf-help)
+			fzf_keybinds
 			exit 0
 			;;
 		-a | --all)
