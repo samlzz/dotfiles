@@ -286,7 +286,24 @@ run_fzf() {
 	esac
 }
 
+expand_combined_flags() {
+	local arg i
+	for arg in "$@"; do
+		if [[ "$arg" =~ ^-[[:alpha:]]{2,}$ ]]; then
+			for (( i=1; i<${#arg}; i++ )); do
+				printf -- '-%s\n' "${arg:$i:1}"
+			done
+		else
+			printf '%s\n' "$arg"
+		fi
+	done
+}
+
 main() {
+	local -a args
+	mapfile -t args < <(expand_combined_flags "$@")
+	set -- "${args[@]+"${args[@]}"}"
+
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
 		--)
