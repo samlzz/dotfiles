@@ -14,10 +14,35 @@ REFS=()
 PATHS=()
 SHOW_STR=""
 GRAPH=0
+ALL=0
+
+# Single source of truth for fzf keybinds: key:type:requires_all:description
+# type is "action" (dispatched in run_fzf's case statement, goes in --expect)
+# or "toggle" (bound separately via --bind, listed in help only).
+# requires_all=1 means the action only makes sense when -a/--all is active
+# (i.e. the log includes commits not already on the current branch).
+KEYBINDS=(
+	"enter:action:0:Open in pager"
+	"ctrl-y:action:0:Copy hash to clipboard + notify"
+	"ctrl-r:action:0:Interactive rebase from this commit (full todo)"
+	"ctrl-e:action:0:Edit commit content  (amend, then git rebase --continue)"
+	"ctrl-w:action:0:Reword commit message only"
+	"ctrl-o:action:0:Checkout this commit"
+	"ctrl-b:action:0:Create new branch from this commit"
+	"ctrl-x:action:1:Cherry-pick onto current branch"
+	"ctrl-u:action:0:Reset --soft to this commit"
+	"ctrl-p:toggle:0:Toggle preview window"
+	"?:toggle:0:Show this help"
+)
 
 # === FUNCTIONS ===
 
+# fzf_keybinds [all_flag]
+#   no arg    -> static help: show every keybind, annotate gated ones
+#   "0" / "1" -> interactive help: hide keybinds gated on -a/--all accordingly
 fzf_keybinds() {
+	local all_flag="${1:-}"
+
 	local bold='\033[1m'
 	local cyan='\033[0;36m'
 	local dim='\033[2m'
@@ -27,17 +52,26 @@ fzf_keybinds() {
 	local sep="${dim}"
 
 	printf "${bold}fzf keybinds${reset}\n\n"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "Enter"  "Open in pager"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-y" "Copy hash to clipboard + notify"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-r" "Interactive rebase from this commit (full todo)"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-e" "Edit commit content  (amend, then git rebase --continue)"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-w" "Reword commit message only"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-o" "Checkout this commit"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-b" "Create new branch from this commit"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-x" "Cherry-pick onto current branch"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-u" "Reset --soft to this commit"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "ctrl-p" "Toggle preview window"
-	printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "?"      "Show this help"
+
+	local entry k type requires_all desc label show_note
+	for entry in "${KEYBINDS[@]}"; do
+		IFS=':' read -r k type requires_all desc <<< "$entry"
+		show_note=0
+		if [[ "$requires_all" == "1" ]]; then
+			if [[ -z "$all_flag" ]]; then
+				show_note=1
+			elif [[ "$all_flag" == "0" ]]; then
+				continue
+			fi
+		fi
+		label="$k"
+		[[ "$k" == "enter" ]] && label="Enter"
+		if [[ "$show_note" == "1" ]]; then
+			printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s  ${dim}(requires -a/--all)${reset}\n" "$label" "$desc"
+		else
+			printf "  ${key}%-8s${reset}  ${sep}|${reset}  %s\n" "$label" "$desc"
+		fi
+	done
 }
 
 usage() {
@@ -66,6 +100,10 @@ Preview options (-> git show in fzf):
 
 General:
   -h, --help              Show this help and exit
+
+Note: keybinds marked "(requires -a/--all)" only appear in fzf when -a is
+active, since they only make sense for commits not already on the current
+branch.
 
 fzf keybinds:
 $(fzf_keybinds)
@@ -186,6 +224,10 @@ action_branch() {
 
 action_cherry_pick() {
 	local hash="$1"
+	if [[ "$ALL" != "1" ]]; then
+		printf "Error: cherry-pick requires -a/--all (commit must be outside the current branch)\n" >&2
+		return
+	fi
 	check_dirty_and_stash || return
 	git cherry-pick "$hash"
 }
@@ -256,6 +298,17 @@ run_fzf() {
 			fi
 		fi"
 
+	local expect_keys=()
+	local entry k type requires_all desc
+	for entry in "${KEYBINDS[@]}"; do
+		IFS=':' read -r k type requires_all desc <<< "$entry"
+		[[ "$type" != "action" ]] && continue
+		[[ "$requires_all" == "1" && "$ALL" != "1" ]] && continue
+		expect_keys+=("$k")
+	done
+	local expect_str
+	expect_str=$(IFS=,; printf '%s' "${expect_keys[*]}")
+
 	local result key hash query="" fzf_status
 
 	while true; do
@@ -265,7 +318,7 @@ run_fzf() {
 			# Prepend hash as a hidden tab-separated field 1 so {1} is always the hash,
 			# regardless of how many graph characters precede it on the line.
 			local preview_cmd="if [[ \$(cat '$help_state') == '1' ]]; then
-				$script_path --fzf-help
+				$script_path --fzf-help $ALL
 			else
 				[[ -n '{1}' ]] && git show --color=always $SHOW_STR '{1}'
 			fi"
@@ -283,13 +336,13 @@ run_fzf() {
 					--preview "$preview_cmd" \
 					--preview-window='right:70%' \
 					--print-query --query "$query" \
-					--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
+					--expect="$expect_str" \
 					--bind "ctrl-p:$ctrl_p_bind" \
 					--bind "?:$toggle_help"
 			) || fzf_status=$?
 		else
 			local preview_cmd="if [[ \$(cat '$help_state') == '1' ]]; then
-				$script_path --fzf-help
+				$script_path --fzf-help $ALL
 			else
 				git show --color=always $SHOW_STR {1}
 			fi"
@@ -301,7 +354,7 @@ run_fzf() {
 					--preview "$preview_cmd" \
 					--preview-window='right:70%' \
 					--print-query --query "$query" \
-					--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
+					--expect="$expect_str" \
 					--bind "ctrl-p:$ctrl_p_bind" \
 					--bind "?:$toggle_help"
 			) || fzf_status=$?
@@ -367,11 +420,12 @@ main() {
 			exit 0
 			;;
 		--fzf-help)
-			fzf_keybinds
+			fzf_keybinds "${2:-}"
 			exit 0
 			;;
 		-a | --all)
 			LOG_OPTS+=("--all")
+			ALL=1
 			;;
 		-g | --graph)
 			GRAPH=1
