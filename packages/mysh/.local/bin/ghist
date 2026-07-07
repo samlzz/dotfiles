@@ -148,6 +148,19 @@ action_edit() {
 	local hash="$1"
 	check_dirty_and_stash || return
 	GIT_SEQUENCE_EDITOR="sed -i '0,/^pick/s/^pick/edit/'" git rebase -i "${hash}^"
+
+	local choice
+	printf "Rebase stopped at %s for editing.\n" "$hash"
+	printf "Make your changes, then press Enter to amend + continue (or 'a' to abort): "
+	read -r -n 1 choice
+	printf "\n"
+	if [[ "$choice" =~ ^[Aa]$ ]]; then
+		git rebase --abort
+		printf "Rebase aborted.\n"
+		return
+	fi
+	git commit --amend
+	git rebase --continue
 }
 
 action_reword() {
@@ -243,76 +256,85 @@ run_fzf() {
 			fi
 		fi"
 
-	local result key hash
+	local result key hash query="" fzf_status
 
-	if [[ "$GRAPH" == "1" ]]; then
-		# Prepend hash as a hidden tab-separated field 1 so {1} is always the hash,
-		# regardless of how many graph characters precede it on the line.
-		local preview_cmd="if [[ \$(cat '$help_state') == '1' ]]; then
-			$script_path --fzf-help
+	while true; do
+		fzf_status=0
+
+		if [[ "$GRAPH" == "1" ]]; then
+			# Prepend hash as a hidden tab-separated field 1 so {1} is always the hash,
+			# regardless of how many graph characters precede it on the line.
+			local preview_cmd="if [[ \$(cat '$help_state') == '1' ]]; then
+				$script_path --fzf-help
+			else
+				[[ -n '{1}' ]] && git show --color=always $SHOW_STR '{1}'
+			fi"
+			result=$(git log --color=always \
+				--pretty="tformat:%C(auto)%h%d %C(blue)%an %C(green)%ad%Creset %s" \
+				--topo-order --date=human \
+				--graph --decorate "--exclude=refs/stash" \
+				"${git_args[@]}" \
+				| awk '{
+					match($0, /[0-9a-f]{7,40}/)
+					print (RSTART ? substr($0, RSTART, RLENGTH) : "") "\t" $0
+				}' \
+				| fzf --ansi --no-sort \
+					--delimiter=$'\t' --with-nth=2.. \
+					--preview "$preview_cmd" \
+					--preview-window='right:70%' \
+					--print-query --query "$query" \
+					--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
+					--bind "ctrl-p:$ctrl_p_bind" \
+					--bind "?:$toggle_help"
+			) || fzf_status=$?
 		else
-			[[ -n '{1}' ]] && git show --color=always $SHOW_STR '{1}'
-		fi"
-		result=$(git log --color=always \
-			--pretty="tformat:%C(auto)%h%d %C(blue)%an %C(green)%ad%Creset %s" \
-			--topo-order --date=human \
-			--graph --decorate "--exclude=refs/stash" \
-			"${git_args[@]}" \
-			| awk '{
-				match($0, /[0-9a-f]{7,40}/)
-				print (RSTART ? substr($0, RSTART, RLENGTH) : "") "\t" $0
-			}' \
-			| fzf --ansi --no-sort \
-				--delimiter=$'\t' --with-nth=2.. \
-				--preview "$preview_cmd" \
-				--preview-window='right:70%' \
-				--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
-				--bind "ctrl-p:$ctrl_p_bind" \
-				--bind "?:$toggle_help"
-		) || true
-	else
-		local preview_cmd="if [[ \$(cat '$help_state') == '1' ]]; then
-			$script_path --fzf-help
+			local preview_cmd="if [[ \$(cat '$help_state') == '1' ]]; then
+				$script_path --fzf-help
+			else
+				git show --color=always $SHOW_STR {1}
+			fi"
+			result=$(git log --color=always \
+				--pretty="tformat:%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
+				--date-order --date=human \
+				"${git_args[@]}" \
+				| fzf --ansi --no-sort \
+					--preview "$preview_cmd" \
+					--preview-window='right:70%' \
+					--print-query --query "$query" \
+					--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
+					--bind "ctrl-p:$ctrl_p_bind" \
+					--bind "?:$toggle_help"
+			) || fzf_status=$?
+		fi
+
+		# Any non-zero exit (esc, ctrl-c, no match) quits the loop.
+		[[ "$fzf_status" -ne 0 ]] && return
+
+		query=$(sed -n '1p' <<< "$result")
+		key=$(sed -n '2p' <<< "$result")
+
+		local raw_line
+		raw_line=$(sed -n '3p' <<< "$result")
+		if [[ "$GRAPH" == "1" ]]; then
+			# Field 1 is the hash prepended by awk (tab-separated, hidden from display)
+			hash=$(printf '%s' "$raw_line" | cut -f1)
 		else
-			git show --color=always $SHOW_STR {1}
-		fi"
-		result=$(git log --color=always \
-			--pretty="tformat:%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
-			--date-order --date=human \
-			"${git_args[@]}" \
-			| fzf --ansi --no-sort \
-				--preview "$preview_cmd" \
-				--preview-window='right:70%' \
-				--expect=enter,ctrl-y,ctrl-r,ctrl-e,ctrl-w,ctrl-o,ctrl-b,ctrl-x,ctrl-u \
-				--bind "ctrl-p:$ctrl_p_bind" \
-				--bind "?:$toggle_help"
-		) || true
-	fi
+			hash=$(printf '%s' "$raw_line" | awk '{print $1}')
+		fi
+		[[ -z "$hash" ]] && continue
 
-	[[ -z "$result" ]] && return
-	key=$(head -1 <<< "$result")
-
-	local raw_line
-	raw_line=$(tail -1 <<< "$result")
-	if [[ "$GRAPH" == "1" ]]; then
-		# Field 1 is the hash prepended by awk (tab-separated, hidden from display)
-		hash=$(printf '%s' "$raw_line" | cut -f1)
-	else
-		hash=$(printf '%s' "$raw_line" | awk '{print $1}')
-	fi
-	[[ -z "$hash" ]] && return
-
-	case "$key" in
-		enter | "") action_pager       "$hash" ;;
-		ctrl-y)     action_copy        "$hash" ;;
-		ctrl-r)     action_rebase      "$hash" ;;
-		ctrl-e)     action_edit        "$hash" ;;
-		ctrl-w)     action_reword      "$hash" ;;
-		ctrl-o)     action_checkout    "$hash" ;;
-		ctrl-b)     action_branch      "$hash" ;;
-		ctrl-x)     action_cherry_pick "$hash" ;;
-		ctrl-u)     action_reset_soft  "$hash" ;;
-	esac
+		case "$key" in
+			enter | "") action_pager       "$hash" ;;
+			ctrl-y)     action_copy        "$hash" ;;
+			ctrl-r)     action_rebase      "$hash" ;;
+			ctrl-e)     action_edit        "$hash" ;;
+			ctrl-w)     action_reword      "$hash" ;;
+			ctrl-o)     action_checkout    "$hash" ;;
+			ctrl-b)     action_branch      "$hash" ;;
+			ctrl-x)     action_cherry_pick "$hash" ;;
+			ctrl-u)     action_reset_soft  "$hash" ;;
+		esac
+	done
 }
 
 expand_combined_flags() {
