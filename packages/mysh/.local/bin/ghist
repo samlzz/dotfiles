@@ -347,8 +347,9 @@ run_fzf() {
 				git show --color=always $SHOW_STR {1}
 			fi"
 			result=$(git log --color=always \
-				--pretty="tformat:%C(auto)%h %C(blue)%an %C(green)%ad%Creset %s" \
+				--pretty="tformat:%C(auto)%h%d %C(blue)%an %C(green)%ad%Creset %s" \
 				--date-order --date=human \
+				--decorate "--exclude=refs/stash" \
 				"${git_args[@]}" \
 				| fzf --ansi --no-sort \
 					--preview "$preview_cmd" \
