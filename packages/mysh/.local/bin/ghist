@@ -31,6 +31,7 @@ KEYBINDS=(
 	"ctrl-b:action:0:Create new branch from this commit"
 	"ctrl-x:action:1:Cherry-pick onto current branch"
 	"ctrl-u:action:0:Reset --soft to this commit"
+	"ctrl-d:action:0:Multi-branch rebase (git-mrebase)"
 	"ctrl-p:toggle:0:Toggle preview window"
 	"?:toggle:0:Show this help"
 )
@@ -242,6 +243,62 @@ action_reset_soft() {
 	git reset --soft "$hash"
 }
 
+action_mrebase() {
+	check_dirty_and_stash || return
+
+	if ! command -v git-mrebase &>/dev/null; then
+		printf "Error: git-mrebase not found in PATH\n" >&2
+		return
+	fi
+
+	local -a branches
+	mapfile -t branches < <(git branch --format='%(refname:short)')
+	if [[ ${#branches[@]} -lt 2 ]]; then
+		printf "Error: need at least 2 local branches for a multi-branch rebase\n" >&2
+		return
+	fi
+
+	local base
+	base=$(printf '%s\n' "${branches[@]}" \
+		| fzf --prompt="mrebase base branch> " --height=~40% --layout=reverse) || {
+		printf "Cancelled.\n"
+		return
+	}
+	[[ -z "$base" ]] && { printf "Cancelled.\n"; return; }
+
+	local targets_str
+	targets_str=$(printf '%s\n' "${branches[@]}" | grep -Fxv "$base" \
+		| fzf --multi --prompt="mrebase target branches (tab to select)> " --height=~40% --layout=reverse) || {
+		printf "Cancelled.\n"
+		return
+	}
+	[[ -z "$targets_str" ]] && { printf "No target branches selected. Cancelled.\n"; return; }
+
+	local -a targets
+	mapfile -t targets <<< "$targets_str"
+
+	local -a mrebase_args=()
+	local choice remote
+	printf "Prompt to push all target branches after rebase? [y/N] "
+	read -r -n 1 choice
+	printf "\n"
+	if [[ "$choice" =~ ^[Yy]$ ]]; then
+		mrebase_args+=("--prompt")
+		read -r -p "Remote [origin]: " remote
+		[[ -n "$remote" ]] && mrebase_args+=("--remote" "$remote")
+	fi
+
+	printf "Running: git-mrebase %s %s %s\n" "${mrebase_args[*]-}" "$base" "${targets[*]}"
+	# Run in the foreground (no command substitution) so git-mrebase's own
+	# prompts/conflict handling get a real TTY, same as the other rebase
+	# actions above — this is the fix for the ctrl-e "flash and nothing
+	# happens" bug: never capture the output of an interactive git command.
+	if ! git-mrebase "${mrebase_args[@]}" "$base" "${targets[@]}"; then
+		printf "mrebase stopped (likely a conflict). Resolve it, then run:\n"
+		printf "  git-mrebase --continue   (or --abort to cancel)\n"
+	fi
+}
+
 run_fzf() {
 	if [[ ${#SHOW_OPTS[@]} -gt 0 ]]; then
 		SHOW_STR="${SHOW_OPTS[*]}"
@@ -387,6 +444,7 @@ run_fzf() {
 			ctrl-b)     action_branch      "$hash" ;;
 			ctrl-x)     action_cherry_pick "$hash" ;;
 			ctrl-u)     action_reset_soft  "$hash" ;;
+			ctrl-d)     action_mrebase     "$hash" ;;
 		esac
 	done
 }
