@@ -1,0 +1,36 @@
+body {
+  font-family: var(--vscode-font-family);
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  padding: 8px 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  line-height: 22px;
+}
+
+.row.blank {
+  min-height: 10px;
+}
+
+.label {
+  white-space: pre-wrap;
+}
+
+.label.done {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.comment {
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+input[type="checkbox"] {
+  cursor: pointer;
+}

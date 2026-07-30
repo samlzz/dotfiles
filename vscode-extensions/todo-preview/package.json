@@ -1,0 +1,36 @@
+{
+  "name": "mysh-todo-preview",
+  "displayName": "Todo Preview (.todo)",
+  "description": "Interactive checkbox custom editor for .todo files",
+  "version": "0.0.1",
+  "publisher": "sliziard",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "mysh.todoPreview",
+        "displayName": "Todo Preview",
+        "selector": [{ "filenamePattern": "*.todo" }],
+        "priority": "default"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "@vscode/vsce": "^2.24.0"
+  }
+}
