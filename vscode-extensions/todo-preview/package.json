@@ -19,6 +19,46 @@
         "selector": [{ "filenamePattern": "*.todo" }],
         "priority": "default"
       }
+    ],
+    "commands": [
+      {
+        "command": "mysh.todoPreview.openSource",
+        "title": "Open Source",
+        "category": "Todo Preview",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "mysh.todoPreview.openPreview",
+        "title": "Open Preview",
+        "category": "Todo Preview",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "mysh.todoPreview.toggle",
+        "title": "Toggle Text/Preview View",
+        "category": "Todo Preview"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "mysh.todoPreview.openSource",
+          "when": "activeCustomEditorId == 'mysh.todoPreview'",
+          "group": "navigation"
+        },
+        {
+          "command": "mysh.todoPreview.openPreview",
+          "when": "resourceExtname == .todo && activeCustomEditorId != 'mysh.todoPreview'",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "mysh.todoPreview.toggle",
+        "key": "ctrl+shift+v",
+        "when": "resourceExtname == .todo"
+      }
     ]
   },
   "scripts": {

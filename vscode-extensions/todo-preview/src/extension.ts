@@ -3,6 +3,45 @@ import { parseTodoDocument } from "./todoParser";
 
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(TodoEditorProvider.register(context));
+  context.subscriptions.push(
+    vscode.commands.registerCommand("mysh.todoPreview.openSource", () =>
+      reopenActiveTodoWith("default")
+    ),
+    vscode.commands.registerCommand("mysh.todoPreview.openPreview", () =>
+      reopenActiveTodoWith(TodoEditorProvider.viewType)
+    ),
+    vscode.commands.registerCommand("mysh.todoPreview.toggle", toggleActiveTodoView)
+  );
+}
+
+function getActiveTodoTabInfo(): { uri: vscode.Uri; isPreview: boolean } | undefined {
+  const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
+  if (!tab) {
+    return undefined;
+  }
+  if (tab.input instanceof vscode.TabInputCustom) {
+    return { uri: tab.input.uri, isPreview: tab.input.viewType === TodoEditorProvider.viewType };
+  }
+  if (tab.input instanceof vscode.TabInputText) {
+    return { uri: tab.input.uri, isPreview: false };
+  }
+  return undefined;
+}
+
+async function reopenActiveTodoWith(viewType: string): Promise<void> {
+  const info = getActiveTodoTabInfo();
+  if (!info) {
+    return;
+  }
+  await vscode.commands.executeCommand("vscode.openWith", info.uri, viewType);
+}
+
+async function toggleActiveTodoView(): Promise<void> {
+  const info = getActiveTodoTabInfo();
+  if (!info) {
+    return;
+  }
+  await reopenActiveTodoWith(info.isPreview ? "default" : TodoEditorProvider.viewType);
 }
 
 export function deactivate(): void {}

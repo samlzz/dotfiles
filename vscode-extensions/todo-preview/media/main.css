@@ -1,36 +1,167 @@
+:root {
+  --todo-guide: var(--vscode-tree-indentGuidesStroke, var(--vscode-editorIndentGuide-background));
+  --todo-accent: var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+  --todo-lane: 26px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   font-family: var(--vscode-font-family);
   color: var(--vscode-editor-foreground);
   background-color: var(--vscode-editor-background);
-  padding: 8px 16px;
+  padding: 10px 18px 24px;
+  font-size: 13px;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
 }
 
 .row {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 22px;
-  line-height: 22px;
+  align-items: stretch;
+  min-height: 26px;
 }
 
 .row.blank {
-  min-height: 10px;
+  min-height: 8px;
 }
 
+/* --- tree connectors ------------------------------------------------- */
+
+.lane,
+.elbow {
+  position: relative;
+  flex: 0 0 var(--todo-lane);
+  width: var(--todo-lane);
+}
+
+.lane.guide::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--todo-guide);
+}
+
+.elbow .v-top {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 50%;
+  width: 1px;
+  background: var(--todo-guide);
+}
+
+.elbow .h {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 60%;
+  height: 1px;
+  background: var(--todo-guide);
+}
+
+.elbow .v-bottom {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  bottom: 0;
+  width: 1px;
+  background: var(--todo-guide);
+  display: none;
+}
+
+.elbow.continue .v-bottom {
+  display: block;
+}
+
+/* --- checkbox ---------------------------------------------------------- */
+
+.checkbox {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  align-self: center;
+  margin-right: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-checkbox-border, var(--vscode-contrastBorder, #888));
+  background: var(--vscode-checkbox-background, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--vscode-checkbox-foreground, transparent);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+
+.checkbox svg path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  transition: stroke-dashoffset 160ms ease;
+}
+
+.checkbox.checked {
+  background: var(--todo-accent);
+  border-color: var(--todo-accent);
+  color: var(--vscode-editor-background);
+}
+
+.checkbox.checked svg path {
+  stroke-dashoffset: 0;
+}
+
+.checkbox:hover {
+  border-color: var(--todo-accent);
+}
+
+.checkbox:active {
+  transform: scale(0.9);
+}
+
+.checkbox:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+/* --- labels -------------------------------------------------------------- */
+
 .label {
+  align-self: center;
+  font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
+  font-size: var(--vscode-editor-font-size, 13px);
   white-space: pre-wrap;
+  transition: color 120ms ease, opacity 120ms ease;
 }
 
 .label.done {
+  color: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
   text-decoration: line-through;
-  opacity: 0.6;
+  text-decoration-color: var(--todo-guide);
+  opacity: 0.7;
 }
 
-.comment {
+.heading {
+  align-self: center;
+  font-family: var(--vscode-font-family);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--vscode-descriptionForeground);
-  font-style: italic;
+  padding: 6px 0 4px;
 }
 
-input[type="checkbox"] {
-  cursor: pointer;
+@media (prefers-reduced-motion: reduce) {
+  .checkbox,
+  .checkbox svg path,
+  .label {
+    transition: none;
+  }
 }
