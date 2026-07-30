@@ -71,9 +71,9 @@
     },
     "clangd.checkUpdates": true,
     "clangd.arguments": [],
-    "clangd.path": "/home/sliziard/.config/Code/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/22.1.0/clangd_22.1.0/bin/clangd",
+    "clangd.path": "/home/sliziard/.config/Code/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/22.1.6/clangd_22.1.6/bin/clangd",
     "explorer.confirmDelete": false,
-    "diffEditor.ignoreTrimWhitespace": true,
+    "diffEditor.ignoreTrimWhitespace": false,
     "maptz.regionfolder.collapseDefaultRegionsOnOpen": true,
     "gitlens.graph.layout": "editor",
     "github.copilot.nextEditSuggestions.enabled": false,
@@ -95,5 +95,10 @@
         "sed": true
     },
     "resharper.region.region": "Europe",
-    "resharper.dataSharing.allowDataSharing": false
+    "resharper.dataSharing.allowDataSharing": false,
+    "chat.viewSessions.orientation": "stacked",
+    "redhat.telemetry.enabled": false,
+    "[xml]": {
+        "editor.defaultFormatter": "redhat.vscode-xml"
+    }
 }
