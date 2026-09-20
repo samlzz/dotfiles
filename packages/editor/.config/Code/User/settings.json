@@ -29,6 +29,13 @@
         "reportUnreachable": "none",
         "reportUnusedCallResult": "none"
     },
+    // lua
+    "Lua.workspace.library": [
+        "/usr/share/hypr/stubs"
+    ],
+    "Lua.diagnostics.globals": [
+        "hl"
+    ],
     // editor
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.quickSuggestions": {
