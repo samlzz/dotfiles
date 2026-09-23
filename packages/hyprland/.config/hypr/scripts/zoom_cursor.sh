@@ -30,4 +30,4 @@ if (( $(echo "$current < 1" | bc -l) )); then
     current=1
 fi
 
-hyprctl keyword cursor:zoom_factor "$current"
+hyprctl eval "hl.config({ cursor = { zoom_factor = $current } })"

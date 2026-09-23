@@ -14,19 +14,24 @@ set_border_colors() {
 	local active="$1"
 	local inactive="$2"
 
-	hyprctl keyword general:col.active_border "$active"
-	hyprctl keyword general:col.inactive_border "$inactive"
+	# active is "<color1> <color2> <angle>deg" -- hl.config() rejects that
+	# raw gradient string, it needs the { colors = {...}, angle = N } form.
+	local -a parts
+	read -ra parts <<<"$active"
+	local color1="${parts[0]}" color2="${parts[1]}" angle="${parts[2]%deg}"
+
+	hyprctl eval "hl.config({ general = { col = { active_border = { colors = { \"$color1\", \"$color2\" }, angle = $angle }, inactive_border = \"$inactive\" } } })"
 }
 
 if systemctl --user is-active --quiet "$IDLE_SERVICE"; then
 	systemctl --user stop "$IDLE_SERVICE"
 	set_border_colors "$BORDER_ACTIVE_NOIDDLE" "$BORDER_INACTIVE_NOIDLE"
-	hyprctl keyword general:border_size 5
+	hyprctl eval 'hl.config({ general = { border_size = 5 } })'
 	logger -i $$ "waybar:toggle-idle: Hypridle disable"
 else
 	systemctl --user start "$IDLE_SERVICE"
 	set_border_colors "$BORDER_ACTIVE" "$BORDER_INACTIVE"
-	hyprctl keyword general:border_size 2 # Default value
+	hyprctl eval 'hl.config({ general = { border_size = 2 } })' # Default value
 	logger -i $$ "waybar:toggle-idle: Hypridle enable"
 fi
 

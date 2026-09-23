@@ -11,10 +11,11 @@ readonly -a WIN_W=(720 1800 1800)
 readonly -a WIN_H=(240 680 785)
 
 resize_terminal() {
-	hyprctl dispatch resizewindowpixel \
-		"exact ${WIN_W[$1]} ${WIN_H[$1]},title:WayWea" 2>/dev/null
-	hyprctl dispatch movewindowpixel \
-		"exact ${WIN_ORIGIN},title:WayWea" 2>/dev/null
+	local origin_x="${WIN_ORIGIN%% *}"
+	local origin_y="${WIN_ORIGIN##* }"
+
+	hyprctl dispatch "hl.dsp.window.resize({ window = \"title:WayWea\", x = ${WIN_W[$1]}, y = ${WIN_H[$1]}, relative = false })" 2>/dev/null
+	hyprctl dispatch "hl.dsp.window.move({ window = \"title:WayWea\", x = $origin_x, y = $origin_y, relative = false })" 2>/dev/null
 	stty cols "${COLS[$1]}" rows "${ROWS[$1]}" 2>/dev/null || true
 	sleep 0.05
 }
