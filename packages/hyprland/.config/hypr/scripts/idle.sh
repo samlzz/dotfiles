@@ -15,7 +15,7 @@ lock_session() {
 }
 
 turn_off_dpms() {
-    hyprctl dispatch dpms off
+    hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'
 }
 
 enable_power_saving_features() {
@@ -46,7 +46,7 @@ handle_suspend_hibernate() {
 }
 
 turn_on_dpms_and_restore() {
-    hyprctl dispatch dpms on
+    hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'
     nmcli radio wifi on || printf "Failed to enable Wi-Fi\n" >&2
     rfkill unblock bluetooth || printf "Failed to unblock Bluetooth\n" >&2
 }
