@@ -145,8 +145,8 @@
 			"*": 6
 		},
 		"sort-by": "number",
-		"on-scroll-up": "hyprctl dispatch workspace -1",
-		"on-scroll-down": "hyprctl dispatch workspace +1",
+		"on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"-1\" })'",
+		"on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"+1\" })'",
 		"smooth-scrolling-threshold": 1.0
 	},
 	"hyprland/workspaces#special": {
@@ -386,7 +386,7 @@
 	},
 	"custom/quit": {
 		"format": "󰗼",
-		"on-click": "hyprctl dispatch exit",
+		"on-click": "hyprctl dispatch 'hl.dsp.exit()'",
 		"tooltip-format": "Log Out"
 	},
 	"custom/lock": {
