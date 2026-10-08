@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Usage: ./open_links.sh <file>
+# Opens every link found in <file> in a new tab of the default browser.
+
+set -euo pipefail
+
+readonly URL_REGEX='(https?|ftp)://[^[:space:]<>"'"'"']+|www\.[^[:space:]<>"'"'"']+'
+readonly DELAY=0.5
+
+die() {
+    echo "Error: $*" >&2
+    exit 1
+}
+
+# Print the first available command able to open a URL.
+get_opener() {
+    local cmd
+    for cmd in xdg-open open wslview; do
+        if command -v "$cmd" >/dev/null 2>&1; then
+            echo "$cmd"
+            return
+        fi
+    done
+    die "no opener found (xdg-open, open, wslview)"
+}
+
+# Read text on stdin, print one clean URL per line.
+extract_urls() {
+    grep -oE "$URL_REGEX" \
+        | sed -E -e 's/[].,;:!?)}]+$//' -e 's#^www\.#https://www.#' \
+        || true
+}
+
+main() {
+    [[ $# -eq 1 ]] || die "usage: $0 <file>"
+
+    local file=$1
+    [[ -f $file && -r $file ]] || die "'$file' is not a readable file"
+
+    local opener url count=0
+    opener=$(get_opener)
+
+    while IFS= read -r url; do
+        echo "Opening: $url"
+        "$opener" "$url" >/dev/null 2>&1 &
+        count=$((count + 1))
+        sleep "$DELAY"
+    done < <(extract_urls < "$file")
+
+    wait
+    echo "$count link(s) opened."
+}
+
+main "$@"
