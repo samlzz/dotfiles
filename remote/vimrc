@@ -1,0 +1,30 @@
+set nocompatible
+syntax on
+filetype plugin indent on
+set background=dark
+
+set mouse=a
+set number
+set relativenumber
+set expandtab
+set tabstop=4
+set shiftwidth=4
+set softtabstop=4
+set autoindent
+set smartindent
+set cursorline
+set ignorecase
+set smartcase
+set incsearch
+set hlsearch
+set backspace=indent,eol,start
+set scrolloff=5
+set encoding=utf-8
+
+set undofile
+set undodir=$HOME/.local/state/vim/undo//
+set directory=$HOME/.local/state/vim/swap//
+set backupdir=$HOME/.local/state/vim/backup//
+
+" - : go up to the parent directory (built-in netrw).
+nnoremap - :Explore<CR>

@@ -1,0 +1,35 @@
+#!/bin/sh
+# Minimal lessfilter - only tools that are realistically preinstalled
+# (file, ls, tar, unzip). No bat/glow/jq/eza/chafa dependency, unlike
+# the full packages/tools/.config/less/lessfilter.
+#
+# Protocol: print a preview and exit 0, or exit non-zero with no output
+# to let less show the file as-is.
+
+if [ -d "$1" ]; then
+    ls -la "$1"
+    exit 0
+fi
+
+mime=$(file -bL --mime-type "$1" 2>/dev/null)
+
+case "$mime" in
+    application/zip)
+        if command -v unzip >/dev/null 2>&1; then
+            unzip -l "$1"
+            exit 0
+        fi
+        ;;
+    application/x-tar|application/gzip|application/x-bzip2|application/x-xz|application/zstd)
+        if command -v tar >/dev/null 2>&1; then
+            tar tf "$1" 2>/dev/null
+            exit 0
+        fi
+        ;;
+    text/*|application/json|application/xml|'')
+        cat "$1"
+        exit 0
+        ;;
+esac
+
+exit 1
