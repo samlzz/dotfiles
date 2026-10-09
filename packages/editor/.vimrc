@@ -10,7 +10,7 @@ set autoindent
 set smartindent
 set noexpandtab
 
-colorschem catppuccin_mocha
+colorscheme catppuccin_mocha
 
 highlight CursorLine cterm=NONE ctermbg=black
 highlight CursorLineNR cterm=NONE ctermbg=black
