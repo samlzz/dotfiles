@@ -10,10 +10,6 @@
     "typescriptreact": "javascript"
   },
   "tailwindCSS.emmetCompletions": true,
-  // c / cpp
-  "[c, cpp]": {
-    "editor.defaultFormatter": "ms-vscode.cpptools"
-  },
   "makefile.configureOnOpen": true,
   "C_Cpp.formatting": "disabled",
   "C_Cpp.vcFormat.indent.preserveComments": true,
@@ -41,7 +37,6 @@
   "editor.renderWhitespace": "boundary",
   "editor.detectIndentation": false,
   "editor.indentSize": "tabSize",
-  "editor.formatOnSave": true,
   "workbench.settings.applyToAllProfiles": [
     "editor.formatOnSave",
     "editor.formatOnPaste"
@@ -71,5 +66,13 @@
   "gitlens.graph.minimap.enabled": false,
   "gitlens.views.commitDetails.files.layout": "tree",
   "gitlens.ai.model": "gitkraken",
-  "gitlens.ai.gitkraken.model": "gemini:gemini-2.0-flash"
+"gitlens.ai.gitkraken.model": "gemini:gemini-2.0-flash",
+"files.associations": {
+	"*.h": "c"
+},
+"clangd.checkUpdates": true,
+"clangd.arguments": [
+],
+"clangd.path": "/home/sliziard/.config/Code/User/globalStorage/llvm-vs-code-extensions.vscode-clangd/install/21.1.0/clangd_21.1.0/bin/clangd",
+"explorer.confirmDelete": false
 }

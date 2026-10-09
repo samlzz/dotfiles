@@ -7,7 +7,7 @@ ifeq ($(NAME),)
     $(error NAME is empty: please define executable name)
 endif
 
-#? Directory (end with /)
+# ? Directory (end with /)
 SRC_DIR   = src/
 OBJ_DIR   = build/
 BIN_DIR   =
@@ -32,7 +32,7 @@ CXX       = c++
 CXXFLAGS  = -Wall -Wextra -Werror -std=c++98
 
 INCL_DIRS =
-#? Directories & Libraries to link against
+# ? Directories & Libraries to link against
 LIB_DIRS  =
 LIB_FILES =
 
@@ -80,7 +80,7 @@ CPPFLAGS   = $(addprefix -I, $(INCL_DIRS))
 LDFLAGS    = $(addprefix -L, $(LIB_DIRS))
 LDLIBS     = $(addprefix -l, $(LIB_FILES))
 
-#? Determin linker
+# ? Determin linker
 ifeq ($(suffix $(NAME)), .a)
 	LD = $(AR)
 else ifneq ($(CPP_FILES),)
@@ -108,7 +108,11 @@ all: $(OUT)
 
 $(OUT): $(O_DIRS) $(OBJS)
 	$(P)printf "$(GRAY)"
+ifneq ($(suffix $(NAME)), .a)
 	$(LD) $(LDFLAGS) $(OBJS) -o $(OUT) $(LDLIBS)
+else
+	$(LD) $(OUT) $(OBJS)
+endif
 	$(call clr_print,$(GREEN)$(UNDERLINE),$(NAME) compiled !)
 
 $(O_DIRS):
@@ -140,4 +144,8 @@ re: fclean all
 
 .PHONY: run
 run: $(OUT)
+ifneq ($(suffix $(NAME)), .a)
 	$(OUT)
+else
+	@echo "Nothing to run for a static library: $(OUT)"
+endif

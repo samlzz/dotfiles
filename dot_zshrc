@@ -130,3 +130,5 @@ alias wl-paste="xsel --clipboard"
 [[ -f "$XDG_STATE_HOME/ctools/utils.zsh" ]] && source "$XDG_STATE_HOME/ctools/utils.zsh"
 
 [[ -f "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh" ]] && source "$XDG_STATE_HOME/zsh/completion/custom_completion.zsh"
+alias wl-copy="xsel --clipboard"
+alias wl-paste="xsel --clipboard"
