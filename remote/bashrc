@@ -1,0 +1,186 @@
+# Minimal remote bashrc: prompt, history, keybindings, aliases
+# Nothing here should be relied on by non-interactive shells.
+
+case $- in
+    *i*) ;;
+    *) return ;;
+esac
+
+### History ###
+HISTFILE="$HOME/.bash_history"
+HISTCONTROL=ignoredups:erasedups:ignorespace
+HISTTIMEFORMAT='%F %T '
+shopt -s histappend
+shopt -s histverify
+
+### Keybindings ###
+# Ctrl+G: edit the current command line in $EDITOR
+bind '"\C-g": edit-and-execute-command' 2>/dev/null
+
+# Up/Down: prefix-aware history search
+bind '"\e[A": history-search-backward' 2>/dev/null
+bind '"\e[B": history-search-forward' 2>/dev/null
+
+# Ctrl+R: fzf-powered history search, if installed
+if command -v fzf >/dev/null 2>&1; then
+    if fzf --bash >/dev/null 2>&1; then
+        eval "$(fzf --bash)"
+    else
+        for __fzf_kb in /usr/share/fzf/key-bindings.bash /usr/share/doc/fzf/examples/key-bindings.bash /usr/share/fzf/shell/key-bindings.bash "$HOME/.fzf.bash"; do
+            [ -f "$__fzf_kb" ] && . "$__fzf_kb" && break
+        done
+        unset __fzf_kb
+    fi
+fi
+
+### Prompt ###
+# Catppuccin Mocha colors. True 24-bit color only when $COLORTERM says so and
+# $TERM isn't "dumb" - plain, uncolored prompt otherwise.
+
+__remote_color_ok() {
+    [ "$TERM" != "dumb" ] || return 1
+    case "$COLORTERM" in
+        *truecolor*|*24bit*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+__remote_hex() {
+    # prints a truecolor foreground escape for hex color $1, or nothing
+    __remote_color_ok || return 0
+    local hex="${1}" r g b
+    r=$((16#${hex:0:2})); g=$((16#${hex:2:2})); b=$((16#${hex:4:2}))
+    printf '\[\e[38;2;%d;%d;%dm\]' "$r" "$g" "$b"
+}
+
+__remote_reset() {
+    __remote_color_ok || return 0
+    printf '\[\e[0m\]'
+}
+
+__remote_git_branch() {
+    local ref
+    ref=$(git symbolic-ref --short HEAD 2>/dev/null) || ref=$(git rev-parse --short HEAD 2>/dev/null) || return 0
+    printf ' (%s)' "$ref"
+}
+
+__remote_set_prompt() {
+    local exit_code="$1" path_part branch branch_part char_color cmd_prefix reset
+
+    reset="$(__remote_reset)"
+    path_part="$(__remote_hex 89b4fa)\\w${reset}"
+
+    branch="$(__remote_git_branch)"
+    if [ -n "$branch" ]; then
+        branch_part="$(__remote_hex a6adc8)${branch}${reset}"
+    else
+        branch_part=""
+    fi
+
+    if [ "$exit_code" -eq 0 ]; then
+        char_color="$(__remote_hex cba6f7)"
+    else
+        char_color="$(__remote_hex f38ba8)"
+    fi
+
+    # cmd prefix = '>$' or '>#' (for su)
+    PS1="${path_part}${branch_part} ${char_color}>\\\$${reset} "
+}
+
+__remote_prompt_command() {
+    local exit_code=$?
+    history -a; history -c; history -r
+    __remote_set_prompt "$exit_code"
+}
+PROMPT_COMMAND=__remote_prompt_command
+
+### Aliases ###
+if command -v eza >/dev/null 2>&1; then
+    alias ls='eza --group-directories-first'
+    alias la='eza -a --group-directories-first'
+    alias ll='eza -l --group-directories-first'
+    alias lt='eza -T --group-directories-first'
+else
+    alias la='ls -A'
+    alias ll='ls -l'
+    if command -v tree >/dev/null 2>&1; then
+        alias lt='tree'
+    fi
+fi
+
+if command -v rg >/dev/null 2>&1; then
+    alias grep='rg'
+fi
+
+alias cl='clear'
+alias mk='make'
+alias e="$EDITOR"
+
+alias gs='git status'
+alias ga='git add'
+alias gaa='git add .'
+alias gc='git commit'
+alias gcm='git commit -m'
+alias gd='git diff'
+alias gl='git log'
+alias gck='git checkout'
+
+alias gs="git status"
+alias gsa="git stash"
+alias gf="git fetch --all"
+alias gl="git log"
+alias gd="git diff"
+alias gcl="git clone"
+alias ga="git add"
+alias gaa="git add ."
+alias gc="git commit"
+alias gcm="git commit -m"
+alias gca="git commit --amend"
+alias gp="git push"
+alias gpf="git push --force-with-lease"
+alias ggraph="git log --oneline --graph --decorate --exclude=refs/stash --all"
+alias gck="git checkout"
+alias gifiles="git ls-files --others --ignored --exclude-standard"
+
+### Functions ###
+
+cpbak() {
+    cp "$1" "$1.bak"
+}
+
+# wl-copy/wl-paste: same names as the full setup's Wayland clipboard
+# tools, but they work everywhere:
+# 1- check for the real wl-copy/wl-paste
+# 2.copy- OSC 52 (copies to the LOCAL term clipboard with no deps; works through tmux set-clipboard on)
+# 2.paste- check for xclip or xsel
+# 3.paste- fall back to tmux's own copy buffer
+
+wl-copy() {
+    local real
+    real=$(type -P wl-copy 2>/dev/null) && [ -n "$real" ] && { command wl-copy "$@"; return; }
+
+    local data b64
+    if [ -n "$1" ] && [ -f "$1" ]; then
+        data=$(cat "$1")
+    else
+        data=$(cat)
+    fi
+    b64=$(printf '%s' "$data" | base64 | tr -d '\n')
+    printf '\e]52;c;%s\a' "$b64"
+}
+
+wl-paste() {
+    local real
+    real=$(type -P wl-paste 2>/dev/null) && [ -n "$real" ] && { command wl-paste "$@"; return; }
+
+    if command -v xclip >/dev/null 2>&1; then
+        xclip -selection clipboard -o
+    elif command -v xsel >/dev/null 2>&1; then
+        xsel --clipboard --output
+    elif [ -n "$TMUX" ] && command -v tmux >/dev/null 2>&1; then
+        tmux show-buffer
+    else
+        echo "wl-paste: no clipboard available (no Wayland/X11 display, no tmux buffer)" >&2
+        return 1
+    fi
+}

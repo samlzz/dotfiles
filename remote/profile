@@ -1,0 +1,24 @@
+# Minimal remote profile: env vars only
+# Chains into ~/.bashrc
+
+export COLORTERM="${COLORTERM:-truecolor}"
+export EDITOR="${EDITOR:-vi}"
+
+export LESS='--mouse --wheel-lines=3 -RF'
+export PAGER='less'
+
+if [ -x "$HOME/.config/less/lessfilter" ]; then
+    export LESSOPEN="|$HOME/.config/less/lessfilter %s"
+fi
+
+if command -v bat >/dev/null 2>&1; then
+    export MANPAGER="sh -c 'sed -u -e \"s/\\x1B\\[[0-9;]*m//g; s/.\\x08//g\" | bat -p -lman'"
+else
+    export MANPAGER='less -R'
+fi
+
+case $- in
+    *i*)
+        [ -n "${BASH_VERSION:-}" ] && [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+        ;;
+esac
