@@ -74,7 +74,10 @@
     "gitlens.ai.gitkraken.model": "gemini:gemini-2.0-flash",
     "files.associations": {
         "*.h": "c",
-        "*.cql": "sql"
+        "*.cql": "sql",
+        "bashrc": "shellscript",
+        "profile": "shellscript",
+        "vimrc": "Vimscript"
     },
     "clangd.checkUpdates": true,
     "clangd.arguments": [],
@@ -107,5 +110,9 @@
     "redhat.telemetry.enabled": false,
     "[xml]": {
         "editor.defaultFormatter": "redhat.vscode-xml"
+    },
+    "workbench.editorAssociations": {
+        "*.copilotmd": "vscode.markdown.preview.editor",
+        "*.md": "vscode.markdown.editor"
     }
 }
