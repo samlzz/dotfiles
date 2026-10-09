@@ -100,11 +100,17 @@ if command -v eza >/dev/null 2>&1; then
     alias la='eza -a --group-directories-first'
     alias ll='eza -l --group-directories-first'
     alias lt='eza -T --group-directories-first'
+    alias lta='eza -aT --group-directories-first --git-ignore'
 else
-    alias la='ls -A'
-    alias ll='ls -l'
+    export LS_OPTIONS='--color=auto'
+    eval "$(dircolors)"
+    alias ls='ls $LS_OPTIONS'
+    alias l='ls $LS_OPTIONS -lA'
+    alias la='ls $LS_OPTIONS -A'
+    alias ll='ls $LS_OPTIONS -l'
     if command -v tree >/dev/null 2>&1; then
         alias lt='tree'
+        alias lta='tree -a --gitignore'
     fi
 fi
 
