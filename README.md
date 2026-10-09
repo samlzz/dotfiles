@@ -96,7 +96,7 @@ scp remote/install.sh host:~/ && ssh host 'bash install.sh'
 or curl it directly from the raw GitHub URL (no scp needed, as long as the remote box has outbound internet access):
 
 ```bash
-ssh host 'curl -fsSL https://raw.githubusercontent.com/samlzz/dotfiles/refs/heads/refactor/3-tier-model/remote/install.sh | bash'
+curl -fsSL https://raw.githubusercontent.com/samlzz/dotfiles/refs/heads/refactor/3-tier-model/remote/install.sh | bash
 ```
 
 - Installs `~/.profile`, `~/.bashrc`, `~/.vimrc`, `~/.config/less/lessfilter`.
