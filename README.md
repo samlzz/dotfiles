@@ -5,6 +5,17 @@ Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
 ---
 
+## Three tiers
+
+Not every machine gets the full config:
+| Tier | Where | What |
+|------|-------|------|
+| **Full** | Own Arch/Hyprland machines | Every package under `packages/` |
+| **Workstation** | A laptop you own but go light on (work/school laptop) | `make stow-workstation` - see [Makefile](#makefile) |
+| **Minimal / remote** | SSH into boxes you don't fully control | One self-contained script, no git/Stow on the remote end - see [Minimal / remote](#minimal--remote) |
+
+---
+
 ## Structure
 
 Stow packages live under `packages/`. Each one mirrors the home directory tree so Stow can symlink files directly into `~`.
@@ -23,6 +34,13 @@ dotfiles/
 │   ├── tools/       # bat, lf, cava, glow, jrnl, oxker…
 │   ├── ssh/         # SSH client config (keys excluded)
 │   └── system/      # Systemd user units, Nerd fonts, XDG base settings
+├── remote/          # Minimal tier source files + the generated installer
+│   ├── profile      # Env vars (EDITOR, LESS, PAGER, MANPAGER…), chains into bashrc
+│   ├── bashrc       # Prompt, history, keybindings, aliases - bash only
+│   ├── tmux.conf    # Plugin-free tmux config, opt-in at install time
+│   ├── vimrc        # Sane vim defaults, no colorscheme
+│   ├── less/        # Archives preview filter for less
+│   └── install.sh   # Generated - see scripts/build-remote-bundle.sh
 ├── out_home/        # Files targeting / instead of ~ (requires sudo)
 ├── scripts/         # Utility scripts
 ├── templates/       # Reusable file templates (Makefile, .gitignore…)
@@ -48,7 +66,42 @@ make restow  PKG=mysh         # re-symlink after adding files to a package
 
 make dry-run PKG=desktop      # simulate without applying
 make dry-run-all              # simulate everything
+
+make stow-workstation         # stow the workstation tier (mysh prompt git editor terminal themes tools)
+make unstow-workstation       # unstow it
+make dry-run-workstation      # simulate it without applying
 ```
+
+---
+
+## Minimal / remote
+
+For SSH sessions into boxes you don't control: no package installs,
+bash only, no git clone or Stow needed on the remote end - just one file.
+
+Source files live under `remote/`; `remote/install.sh` is the generated,
+self-contained installer built from them (base64-embedded, plain POSIX
+`sh`).
+Regenerate it after editing any `remote/*` source file - never hand-edit `install.sh`:
+```bash
+./scripts/build-remote-bundle.sh   # regenerates remote/install.sh
+```
+
+Deploy it to a remote box and run it there - either copy it over:
+
+```bash
+scp remote/install.sh host:~/ && ssh host 'bash install.sh'
+```
+
+or curl it directly from the raw GitHub URL (no scp needed, as long as the remote box has outbound internet access):
+
+```bash
+ssh host 'curl -fsSL https://raw.githubusercontent.com/samlzz/dotfiles/refs/heads/refactor/3-tier-model/remote/install.sh | bash'
+```
+
+- Installs `~/.profile`, `~/.bashrc`, `~/.vimrc`, `~/.config/less/lessfilter`.
+- Backs up any pre-existing target file first (timestamped, never silently clobbered).
+- tmux is opt-in (not installed by default): `--with-tmux` / `--no-tmux`, or `WITH_TMUX=1`; prompts interactively if neither is given. Its prefix is **Ctrl+N**, not Ctrl+B, so it doesn't fight an outer/local tmux when you SSH from inside one.
 
 ---
 
