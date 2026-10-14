@@ -110,7 +110,7 @@ else
     alias ll='ls $LS_OPTIONS -l'
     if command -v tree >/dev/null 2>&1; then
         alias lt='tree'
-        alias lta='tree -a --gitignore'
+        alias lta='tree -a'
     fi
 fi
 
