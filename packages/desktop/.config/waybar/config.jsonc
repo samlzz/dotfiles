@@ -35,7 +35,8 @@
 			"temperature",
 			"custom/idle-inhibitor",
 			"power-profiles-daemon",
-			"custom/colorpicker"
+			"custom/colorpicker",
+			"custom/keyboard"
 		]
 	},
 	"custom/distrib_ico": {
@@ -92,7 +93,14 @@
 	"custom/colorpicker": {
 		"format": "",
 		"on-click": "~/.config/waybar/scripts/colorpicker.sh",
-		"tooltip": false
+		"tooltip-format": "Color picker",
+		"tooltip": true
+	},
+	"custom/keyboard": {
+		"format": "",
+		"on-click": "~/.config/waybar/scripts/slatekbd-launch.sh",
+		"tooltip-format": "On-screen keyboard",
+		"tooltip": true
 	},
 	"tray": {
 		"icon-size": 20,
