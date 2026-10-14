@@ -102,6 +102,10 @@ hl.bind(mainMod .. " + SHIFT + down", hl.dsp.window.move({ direction = "down" })
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + CTRL + mouse:272", hl.dsp.window.resize(), { mouse = true })
 
+-- Mouse side buttons (back/forward) -> Left/Right arrows
+hl.bind("mouse:275", hl.dsp.send_shortcut({ mods = "", key = "Left" }))
+hl.bind("mouse:276", hl.dsp.send_shortcut({ mods = "", key = "Right" }))
+
 -- Cycle window width
 -- ! Needs 'scrolling' layout
 hl.bind(mainMod .. " + comma", hl.dsp.layout("colresize -conf"))
