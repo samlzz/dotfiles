@@ -52,12 +52,12 @@
 	},
 	"cpu": {
 		"interval": 15,
-		"format": "  {}%",
+		"format": " {}%",
 		"max-length": 10
 	},
 	"memory": {
 		"interval": 30,
-		"format": "  {}%",
+		"format": " {}%",
 		"max-length": 10
 	},
 	"temperature": {
