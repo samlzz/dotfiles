@@ -19,3 +19,6 @@ packages/editor/.vim/.netrwhist
 # External binary
 packages/mysh/.local/bin/oh-my-posh
 packages/mysh/.local/bin/tilt
+
+# External autocomplete
+packages/mysh/.local/share/zsh/site-functions/_copilot
