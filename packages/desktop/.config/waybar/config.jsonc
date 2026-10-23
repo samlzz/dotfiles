@@ -4,7 +4,7 @@
 	"modules-left": [
 		"group/monitoring",
 		"tray",
-		"group/group-media"
+		"custom/media"
 	],
 	"modules-center": [
 		"hyprland/window",
@@ -126,9 +126,9 @@
 	},
 	"custom/media": {
 		"format": " {}",
-		"exec": "~/.config/waybar/scripts/media_info.sh --artist",
+		"exec": "~/.config/waybar/scripts/media_info.sh | awk -F'|' '{ print $1 }'",
 		"interval": 2,
-		"max-length": 35,
+		"max-length": 25,
 		"tootltip": false
 	},
 	"hyprland/window": {
