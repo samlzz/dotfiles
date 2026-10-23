@@ -12,6 +12,7 @@ P.term_float = "alacritty --class=term-float"
 P.browser = "flatpak run com.brave.Browser"
 P.file_manager = "nautilus"
 P.music = "flatpak run dev.aunetx.deezer"
+P.share = "localsend"
 
 -- Interact
 P.menu = "fuzzel"
