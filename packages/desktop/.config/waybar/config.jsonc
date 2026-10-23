@@ -9,7 +9,6 @@
 	"modules-center": [
 		"hyprland/window",
 		"hyprland/workspaces",
-		"hyprland/workspaces#special",
 		"custom/notifications",
 		"hyprland/submap"
 	],
