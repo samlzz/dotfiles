@@ -36,9 +36,9 @@ alias e="$EDITOR"
 
 alias sz="source $HOME/.zshenv && source $XDG_CONFIG_HOME/zsh/.zshrc"
 
-if command -v 'rm_secure' &>/dev/null; then
-	alias rm='rm_secure'
-fi
+# if command -v 'rm_secure' &>/dev/null; then
+# 	alias rm='rm_secure'
+# fi
 
 if command -v 'uxplay' &> /dev/null; then
 	alias airplay='uxplay -p 7000 -s 1920x1080 -vs waylandsink -as pipewiresink'
